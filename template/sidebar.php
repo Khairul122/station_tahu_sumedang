@@ -59,30 +59,9 @@ $isLoggedIn = isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true;
 
       <?php elseif ($userRole === 'pimpinan'): ?>
         <li class="nav-item">
-          <a class="nav-link" href="?controller=transaksiadmin&action=index">
-            <i class="mdi mdi-clipboard-text menu-icon"></i>
-            <span class="menu-title">Laporan Transaksi</span>
-          </a>
-        </li>
-
-        <li class="nav-item">
-          <a class="nav-link" href="?controller=customer&action=index">
-            <i class="mdi mdi-account-group menu-icon"></i>
-            <span class="menu-title">Data Customer</span>
-          </a>
-        </li>
-
-        <li class="nav-item">
           <a class="nav-link" href="?controller=laporan&action=index">
             <i class="mdi mdi-file-document menu-icon"></i>
             <span class="menu-title">Laporan</span>
-          </a>
-        </li>
-
-        <li class="nav-item">
-          <a class="nav-link" href="?controller=adminreward&action=tukarPoin">
-            <i class="mdi mdi-swap-horizontal menu-icon"></i>
-            <span class="menu-title">Riwayat Tukar Poin</span>
           </a>
         </li>
 

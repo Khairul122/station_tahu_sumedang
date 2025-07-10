@@ -47,20 +47,7 @@
                             </a>
                           </div>
                         </div>
-                      </div>
-
-                      <div class="col-md-6 col-lg-4 mb-4">
-                        <div class="card">
-                          <div class="card-body text-center">
-                            <i class="mdi mdi-card-account-details display-4 text-success"></i>
-                            <h5 class="card-title">Laporan Membership</h5>
-                            <p class="card-text">Data membership dan member</p>
-                            <a href="?controller=laporan&action=membership" class="btn btn-success btn-sm">
-                              <i class="mdi mdi-eye"></i> Lihat
-                            </a>
-                          </div>
-                        </div>
-                      </div>
+                    </div>
 
                       <div class="col-md-6 col-lg-4 mb-4">
                         <div class="card">
