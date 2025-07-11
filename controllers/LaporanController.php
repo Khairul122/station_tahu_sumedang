@@ -7,8 +7,8 @@ class LaporanController
     private $authModel;
 
     private $company_name = "Station Tahu Sumedang";
-    private $company_address = "Jl. Raya Sumedang No. 123, Sumedang, Jawa Barat";
-    private $company_phone = "Telp: (0261) 123456";
+    private $company_address = "JJl. Raya Padang - Bukittinggi, Sungai Buluh, Kec. Batang Anai, Kabupaten Padang Pariaman, Sumatera Barat";
+    private $company_phone = "Telp: 0812-7588-0001";
 
     public function __construct()
     {
@@ -526,7 +526,7 @@ class LaporanController
         $pdf->SetFont('helvetica', '', 10);
         
         $pdf->Cell(180, 6, '', 0, 0);
-        $pdf->Cell(0, 6, "Sumedang, " . date('d F Y'), 0, 1, 'L');
+        $pdf->Cell(0, 6, "Bukittinggi, " . date('d F Y'), 0, 1, 'L');
         
         $pdf->Cell(180, 6, '', 0, 0);
         $pdf->Cell(0, 6, "Mengetahui,", 0, 1, 'L');
