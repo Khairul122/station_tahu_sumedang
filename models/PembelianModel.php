@@ -100,24 +100,30 @@ class PembelianModel {
     }
     
     public function createTransaksi($customerId, $items, $metodePembayaran = 'tunai') {
-        $this->conn->autocommit(false);
-        $this->conn->begin_transaction();
-        
         try {
             $memberData = $this->getMemberDataByCustomerId($customerId);
             if (!$memberData) {
-                throw new Exception("Data member tidak ditemukan");
+                throw new Exception("Data member tidak ditemukan untuk customer_id: $customerId");
             }
             
             $calculation = $this->calculateTotal($items, $memberData['diskon_persen']);
+            $poinDidapat = ($calculation['total_poin_item'] * $memberData['poin_per_pembelian']) + floor($calculation['total_bayar'] / 10000);
             
-            $poinDidapat = ($calculation['total_poin_item'] * $memberData['poin_per_pembelian']) + 
-                          floor($calculation['total_bayar'] / 10000);
+            $newTotalPembelian = $memberData['total_pembelian'] + $calculation['total_bayar'];
+            $newTotalPoin = $memberData['total_poin'] + $poinDidapat;
+            
+            $currentMembership = $memberData['membership_id'];
+            $newMembership = $this->calculateNewMembership($newTotalPembelian);
             
             $stmt = $this->conn->prepare("
                 INSERT INTO transaksi (customer_id, total_sebelum_diskon, diskon_membership, total_bayar, poin_didapat, metode_pembayaran) 
                 VALUES (?, ?, ?, ?, ?, ?)
             ");
+            
+            if (!$stmt) {
+                throw new Exception("Gagal menyiapkan statement transaksi: " . $this->conn->error);
+            }
+            
             $stmt->bind_param("idddis", 
                 $customerId, 
                 $calculation['total_sebelum_diskon'], 
@@ -132,6 +138,9 @@ class PembelianModel {
             }
             
             $transaksiId = $this->conn->insert_id;
+            if (!$transaksiId) {
+                throw new Exception("Gagal mendapatkan ID transaksi");
+            }
             
             foreach ($items as $item) {
                 $produk = $this->getProdukById($item['produk_id']);
@@ -139,14 +148,8 @@ class PembelianModel {
                     throw new Exception("Produk dengan ID {$item['produk_id']} tidak ditemukan");
                 }
                 
-                $currentStockStmt = $this->conn->prepare("SELECT stok FROM produk WHERE produk_id = ? FOR UPDATE");
-                $currentStockStmt->bind_param("i", $item['produk_id']);
-                $currentStockStmt->execute();
-                $currentStockResult = $currentStockStmt->get_result();
-                $currentStock = $currentStockResult->fetch_assoc();
-                
-                if (!$currentStock || $currentStock['stok'] < $item['jumlah']) {
-                    throw new Exception("Stok {$produk['nama_produk']} tidak mencukupi. Tersedia: " . ($currentStock['stok'] ?? 0) . ", Diminta: {$item['jumlah']}");
+                if ($produk['stok'] < $item['jumlah']) {
+                    throw new Exception("Stok {$produk['nama_produk']} tidak mencukupi. Tersedia: {$produk['stok']}, Diminta: {$item['jumlah']}");
                 }
                 
                 $subtotal = $produk['harga'] * $item['jumlah'];
@@ -156,6 +159,11 @@ class PembelianModel {
                     INSERT INTO detail_transaksi (transaksi_id, produk_id, jumlah, harga_satuan, subtotal, poin_produk, total_poin_item) 
                     VALUES (?, ?, ?, ?, ?, ?, ?)
                 ");
+                
+                if (!$detailStmt) {
+                    throw new Exception("Gagal menyiapkan statement detail: " . $this->conn->error);
+                }
+                
                 $detailStmt->bind_param("iiiddii", 
                     $transaksiId, 
                     $item['produk_id'], 
@@ -171,30 +179,72 @@ class PembelianModel {
                 }
                 
                 $updateStokStmt = $this->conn->prepare("UPDATE produk SET stok = stok - ? WHERE produk_id = ?");
+                if (!$updateStokStmt) {
+                    throw new Exception("Gagal menyiapkan statement update stok: " . $this->conn->error);
+                }
+                
                 $updateStokStmt->bind_param("ii", $item['jumlah'], $item['produk_id']);
                 
-                if (!$updateStokStmt->execute() || $updateStokStmt->affected_rows === 0) {
-                    throw new Exception("Gagal mengupdate stok produk {$produk['nama_produk']}");
+                if (!$updateStokStmt->execute()) {
+                    throw new Exception("Gagal mengupdate stok produk {$produk['nama_produk']}: " . $updateStokStmt->error);
                 }
             }
             
-            $updateCustomerStmt = $this->conn->prepare("
-                UPDATE customers 
-                SET total_pembelian = total_pembelian + ?, total_poin = total_poin + ? 
-                WHERE customer_id = ?
-            ");
-            $updateCustomerStmt->bind_param("dii", $calculation['total_bayar'], $poinDidapat, $customerId);
+            $updateFields = [];
+            $updateValues = [];
+            $updateTypes = "";
             
-            if (!$updateCustomerStmt->execute() || $updateCustomerStmt->affected_rows === 0) {
-                throw new Exception("Gagal mengupdate data customer");
+            $updateFields[] = "total_pembelian = ?";
+            $updateValues[] = $newTotalPembelian;
+            $updateTypes .= "d";
+            
+            $updateFields[] = "total_poin = ?";
+            $updateValues[] = $newTotalPoin;
+            $updateTypes .= "i";
+            
+            if ($newMembership['id'] > $currentMembership) {
+                $updateFields[] = "membership_id = ?";
+                $updateValues[] = $newMembership['id'];
+                $updateTypes .= "i";
             }
             
-            $this->insertAktivitasCustomer($customerId, 'pembelian', "Transaksi #$transaksiId - Total: Rp " . number_format($calculation['total_bayar']));
+            $updateValues[] = $customerId;
+            $updateTypes .= "i";
             
-            $membershipUpdate = $this->checkAndUpdateMembership($customerId);
+            $updateSql = "UPDATE customers SET " . implode(", ", $updateFields) . " WHERE customer_id = ?";
             
-            $this->conn->commit();
-            $this->conn->autocommit(true);
+            $updateCustomerStmt = $this->conn->prepare($updateSql);
+            if (!$updateCustomerStmt) {
+                throw new Exception("Gagal menyiapkan statement update customer: " . $this->conn->error);
+            }
+            
+            $updateCustomerStmt->bind_param($updateTypes, ...$updateValues);
+            
+            if (!$updateCustomerStmt->execute()) {
+                throw new Exception("Gagal mengupdate data customer: " . $updateCustomerStmt->error);
+            }
+            
+            try {
+                $this->insertAktivitasCustomer($customerId, 'pembelian', "Transaksi #$transaksiId - Total: Rp " . number_format($calculation['total_bayar']));
+            } catch (Exception $e) {
+                error_log("Warning: Gagal insert aktivitas: " . $e->getMessage());
+            }
+            
+            $membershipUpdate = ['upgraded' => false];
+            if ($newMembership['id'] > $currentMembership) {
+                try {
+                    $this->insertAktivitasCustomer($customerId, 'follow_up', "Naik tier menjadi {$newMembership['name']}");
+                } catch (Exception $e) {
+                    error_log("Warning: Gagal insert aktivitas membership: " . $e->getMessage());
+                }
+                
+                $membershipUpdate = [
+                    'upgraded' => true,
+                    'new_membership' => $newMembership['name'],
+                    'old_membership_id' => $currentMembership,
+                    'new_membership_id' => $newMembership['id']
+                ];
+            }
             
             return [
                 'success' => true,
@@ -206,12 +256,23 @@ class PembelianModel {
             ];
             
         } catch (Exception $e) {
-            $this->conn->rollback();
-            $this->conn->autocommit(true);
+            error_log("Error dalam createTransaksi: " . $e->getMessage());
             return [
                 'success' => false,
                 'message' => 'Error: ' . $e->getMessage()
             ];
+        }
+    }
+    
+    private function calculateNewMembership($totalPembelian) {
+        if ($totalPembelian >= 500000) {
+            return ['id' => 4, 'name' => 'Platinum'];
+        } elseif ($totalPembelian >= 300000) {
+            return ['id' => 3, 'name' => 'Gold'];
+        } elseif ($totalPembelian >= 100000) {
+            return ['id' => 2, 'name' => 'Silver'];
+        } else {
+            return ['id' => 1, 'name' => 'Bronze'];
         }
     }
     
@@ -226,6 +287,7 @@ class PembelianModel {
                 c.membership_id,
                 c.total_pembelian,
                 c.total_poin,
+                c.status_aktif,
                 m.nama_membership,
                 m.diskon_persen,
                 m.poin_per_pembelian
@@ -346,8 +408,10 @@ class PembelianModel {
     
     public function insertAktivitasCustomer($customerId, $jenisAktivitas, $catatan) {
         $stmt = $this->conn->prepare("INSERT INTO aktivitas_customer (customer_id, jenis_aktivitas, catatan) VALUES (?, ?, ?)");
-        $stmt->bind_param("iss", $customerId, $jenisAktivitas, $catatan);
-        $stmt->execute();
+        if ($stmt) {
+            $stmt->bind_param("iss", $customerId, $jenisAktivitas, $catatan);
+            $stmt->execute();
+        }
     }
     
     public function searchProduk($keyword) {
@@ -381,41 +445,6 @@ class PembelianModel {
     }
     
     public function checkAndUpdateMembership($customerId) {
-        $memberData = $this->getMemberDataByCustomerId($customerId);
-        if (!$memberData) return ['upgraded' => false];
-        
-        $totalPembelian = $memberData['total_pembelian'];
-        $currentMembership = $memberData['membership_id'];
-        
-        $newMembership = 1;
-        $membershipName = 'Bronze';
-        
-        if ($totalPembelian >= 500000) {
-            $newMembership = 4;
-            $membershipName = 'Platinum';
-        } elseif ($totalPembelian >= 300000) {
-            $newMembership = 3;
-            $membershipName = 'Gold';
-        } elseif ($totalPembelian >= 100000) {
-            $newMembership = 2;
-            $membershipName = 'Silver';
-        }
-        
-        if ($newMembership > $currentMembership) {
-            $stmt = $this->conn->prepare("UPDATE customers SET membership_id = ? WHERE customer_id = ?");
-            $stmt->bind_param("ii", $newMembership, $customerId);
-            $stmt->execute();
-            
-            $this->insertAktivitasCustomer($customerId, 'follow_up', "Naik tier menjadi $membershipName");
-            
-            return [
-                'upgraded' => true,
-                'new_membership' => $membershipName,
-                'old_membership_id' => $currentMembership,
-                'new_membership_id' => $newMembership
-            ];
-        }
-        
         return ['upgraded' => false];
     }
 }

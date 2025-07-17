@@ -43,18 +43,18 @@ class LaporanController
         }
     }
 
-    public function membership()
+    public function member()
     {
         $this->authModel->requireAdminOrPimpinanRole();
 
         $format = $_GET['format'] ?? 'view';
-        $membership = $this->model->getLaporanMembership();
+        $member = $this->model->getLaporanMember();
 
         if ($format === 'pdf') {
-            $this->generatePDFMembership($membership);
+            $this->generatePDFMember($member);
         } else {
-            $data = ['membership' => $membership];
-            include 'views/laporan/membership.php';
+            $data = ['member' => $member];
+            include 'views/laporan/member.php';
         }
     }
 
@@ -141,7 +141,6 @@ class LaporanController
         $pdf->Cell(0, 6, $this->company_address, 0, 1, 'C');
         $pdf->Cell(0, 6, $this->company_phone, 0, 1, 'C');
 
-        // Garis di bawah informasi perusahaan
         $pdf->Line(15, $pdf->GetY() + 3, $pdf->getPageWidth() - 15, $pdf->GetY() + 3);
 
         $pdf->Ln(10);
@@ -172,7 +171,7 @@ class LaporanController
             $pdf->Cell(0, 40, 'Tidak ada data produk dalam periode yang dipilih', 0, 1, 'C');
         } else {
             $this->checkPageBreak($pdf, 50);
-            
+
             $pdf->SetFont('helvetica', 'B', 9);
             $pdf->SetFillColor(66, 139, 202);
             $pdf->SetTextColor(255, 255, 255);
@@ -192,7 +191,7 @@ class LaporanController
 
             foreach ($produk as $row) {
                 $this->checkPageBreak($pdf, 15);
-                
+
                 $fill = ($no % 2 == 0) ? 1 : 0;
                 $pdf->SetFillColor(240, 240, 240);
 
@@ -208,7 +207,7 @@ class LaporanController
             }
 
             $this->checkPageBreak($pdf, 15);
-            
+
             $pdf->SetFont('helvetica', 'B', 9);
             $pdf->SetFillColor(66, 139, 202);
             $pdf->SetTextColor(255, 255, 255);
@@ -220,64 +219,65 @@ class LaporanController
         $pdf->Output('laporan_produk_' . date('Y-m-d') . '.pdf', 'I');
     }
 
-    private function generatePDFMembership($membership)
+    private function generatePDFMember($member)
     {
-        $pdf = $this->createPDF('LAPORAN DATA MEMBERSHIP', 'Daftar Membership dan Informasi Member');
+        $pdf = $this->createPDF('LAPORAN DATA MEMBER', 'Daftar Member Station Tahu Sumedang');
 
         $pdf->SetFont('helvetica', 'B', 11);
-        $pdf->Cell(0, 8, 'Daftar Data Membership per ' . date('d F Y'), 0, 1, 'L');
         $pdf->Ln(2);
 
-        if (empty($membership)) {
+        if (empty($member)) {
             $pdf->SetFont('helvetica', '', 12);
-            $pdf->Cell(0, 40, 'Tidak ada data membership dalam periode yang dipilih', 0, 1, 'C');
+            $pdf->Cell(0, 40, 'Tidak ada data member dalam periode yang dipilih', 0, 1, 'C');
         } else {
             $this->checkPageBreak($pdf, 50);
-            
+
+            // Update table width setelah menghapus Total Belanja
+            $tableWidth = 175; // 10 + 45 + 30 + 40 + 25 + 25
+            $pageWidth = $pdf->getPageWidth();
+            $startX = ($pageWidth - $tableWidth) / 2;
+
             $pdf->SetFont('helvetica', 'B', 9);
             $pdf->SetFillColor(66, 139, 202);
             $pdf->SetTextColor(255, 255, 255);
-
-            $pdf->Cell(15, 8, 'No', 1, 0, 'C', 1);
-            $pdf->Cell(65, 8, 'Nama Membership', 1, 0, 'C', 1);
-            $pdf->Cell(30, 8, 'Diskon %', 1, 0, 'C', 1);
-            $pdf->Cell(35, 8, 'Total Member', 1, 0, 'C', 1);
-            $pdf->Cell(52, 8, 'Total Pembelian', 1, 0, 'C', 1);
-            $pdf->Cell(35, 8, 'Total Poin', 1, 1, 'C', 1);
+            $pdf->SetX($startX);
+            $pdf->Cell(10, 8, 'No', 1, 0, 'C', 1);
+            $pdf->Cell(45, 8, 'Nama Member', 1, 0, 'C', 1);
+            $pdf->Cell(30, 8, 'No Telepon', 1, 0, 'C', 1);
+            $pdf->Cell(40, 8, 'Email', 1, 0, 'C', 1);
+            $pdf->Cell(25, 8, 'Membership', 1, 0, 'C', 1);
+            $pdf->Cell(25, 8, 'Total Poin', 1, 1, 'C', 1);
 
             $pdf->SetFont('helvetica', '', 8);
             $pdf->SetTextColor(0, 0, 0);
             $no = 1;
-            $total_pembelian = 0;
+            $total_poin = 0;
 
-            foreach ($membership as $row) {
+            foreach ($member as $row) {
                 $this->checkPageBreak($pdf, 15);
-                
                 $fill = ($no % 2 == 0) ? 1 : 0;
                 $pdf->SetFillColor(240, 240, 240);
+                $pdf->SetX($startX);
+                $pdf->Cell(10, 6, $no++, 1, 0, 'C', $fill);
+                $pdf->Cell(45, 6, substr($row['nama_customer'], 0, 20), 1, 0, 'L', $fill);
+                $pdf->Cell(30, 6, $row['no_telepon'], 1, 0, 'C', $fill);
+                $pdf->Cell(40, 6, substr($row['email'], 0, 18), 1, 0, 'L', $fill);
+                $pdf->Cell(25, 6, $row['nama_membership'], 1, 0, 'C', $fill);
+                $pdf->Cell(25, 6, $row['total_poin'], 1, 1, 'C', $fill);
 
-                $pdf->Cell(15, 6, $no++, 1, 0, 'C', $fill);
-                $pdf->Cell(65, 6, substr($row['nama_membership'], 0, 30), 1, 0, 'L', $fill);
-                $pdf->Cell(30, 6, $row['diskon_persen'] . '%', 1, 0, 'C', $fill);
-                $pdf->Cell(35, 6, $row['total_member'], 1, 0, 'C', $fill);
-                $pdf->Cell(52, 6, number_format($row['total_pembelian_member']), 1, 0, 'R', $fill);
-                $pdf->Cell(35, 6, number_format($row['total_poin_member']), 1, 1, 'C', $fill);
-
-                $total_pembelian += $row['total_pembelian_member'];
+                $total_poin += $row['total_poin'];
             }
 
-            $this->checkPageBreak($pdf, 15);
-            
             $pdf->SetFont('helvetica', 'B', 9);
             $pdf->SetFillColor(66, 139, 202);
             $pdf->SetTextColor(255, 255, 255);
-            $pdf->Cell(145, 8, 'TOTAL KESELURUHAN', 1, 0, 'R', 1);
-            $pdf->Cell(52, 8, number_format($total_pembelian), 1, 0, 'R', 1);
-            $pdf->Cell(35, 8, '', 1, 1, 'C', 1);
+            $pdf->SetX($startX);
+            $pdf->Cell(150, 8, 'TOTAL KESELURUHAN', 1, 0, 'R', 1);
+            $pdf->Cell(25, 8, number_format($total_poin), 1, 1, 'C', 1);
         }
 
         $this->addComplexSignature($pdf);
-        $pdf->Output('laporan_membership_' . date('Y-m-d') . '.pdf', 'I');
+        $pdf->Output('laporan_member_' . date('Y-m-d') . '.pdf', 'I');
     }
 
     private function generatePDFPenjualanHarian($transaksi, $tanggal)
@@ -292,7 +292,7 @@ class LaporanController
             $pdf->Cell(0, 40, 'Tidak ada data transaksi dalam periode yang dipilih', 0, 1, 'C');
         } else {
             $this->checkPageBreak($pdf, 50);
-            
+
             $startX = ($pdf->GetPageWidth() - 210) / 2;
 
             $pdf->SetFont('helvetica', 'B', 9);
@@ -313,7 +313,7 @@ class LaporanController
 
             foreach ($transaksi as $row) {
                 $this->checkPageBreak($pdf, 15);
-                
+
                 $fill = ($no % 2 == 0) ? 1 : 0;
                 $pdf->SetFillColor(240, 240, 240);
                 $pdf->SetX($startX);
@@ -327,7 +327,7 @@ class LaporanController
             }
 
             $this->checkPageBreak($pdf, 15);
-            
+
             $pdf->SetFont('helvetica', 'B', 9);
             $pdf->SetFillColor(66, 139, 202);
             $pdf->SetTextColor(255, 255, 255);
@@ -343,9 +343,18 @@ class LaporanController
     private function generatePDFPenjualanBulanan($penjualan, $bulan, $tahun)
     {
         $namaBulan = [
-            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
-            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
-            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+            1 => 'Januari',
+            2 => 'Februari',
+            3 => 'Maret',
+            4 => 'April',
+            5 => 'Mei',
+            6 => 'Juni',
+            7 => 'Juli',
+            8 => 'Agustus',
+            9 => 'September',
+            10 => 'Oktober',
+            11 => 'November',
+            12 => 'Desember'
         ];
 
         $pdf = $this->createPDF('LAPORAN PENJUALAN BULANAN', 'Rekap Penjualan per Bulan');
@@ -358,7 +367,7 @@ class LaporanController
             $pdf->Cell(0, 40, 'Tidak ada data penjualan dalam periode yang dipilih', 0, 1, 'C');
         } else {
             $this->checkPageBreak($pdf, 50);
-            
+
             $pdf->SetFont('helvetica', 'B', 9);
             $pdf->SetFillColor(66, 139, 202);
             $pdf->SetTextColor(255, 255, 255);
@@ -378,7 +387,7 @@ class LaporanController
 
             foreach ($penjualan as $row) {
                 $this->checkPageBreak($pdf, 15);
-                
+
                 $fill = ($no % 2 == 0) ? 1 : 0;
                 $pdf->SetFillColor(240, 240, 240);
 
@@ -394,7 +403,7 @@ class LaporanController
             }
 
             $this->checkPageBreak($pdf, 15);
-            
+
             $pdf->SetFont('helvetica', 'B', 9);
             $pdf->SetFillColor(66, 139, 202);
             $pdf->SetTextColor(255, 255, 255);
@@ -411,9 +420,18 @@ class LaporanController
     private function generatePDFPenjualanTahunan($penjualan, $tahun)
     {
         $namaBulan = [
-            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
-            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
-            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+            1 => 'Januari',
+            2 => 'Februari',
+            3 => 'Maret',
+            4 => 'April',
+            5 => 'Mei',
+            6 => 'Juni',
+            7 => 'Juli',
+            8 => 'Agustus',
+            9 => 'September',
+            10 => 'Oktober',
+            11 => 'November',
+            12 => 'Desember'
         ];
 
         $pdf = $this->createPDF('LAPORAN PENJUALAN TAHUNAN', 'Rekap Penjualan per Tahun');
@@ -426,7 +444,7 @@ class LaporanController
             $pdf->Cell(0, 40, 'Tidak ada data penjualan dalam periode yang dipilih', 0, 1, 'C');
         } else {
             $this->checkPageBreak($pdf, 50);
-            
+
             $pdf->SetFont('helvetica', 'B', 9);
             $pdf->SetFillColor(66, 139, 202);
             $pdf->SetTextColor(255, 255, 255);
@@ -446,7 +464,7 @@ class LaporanController
 
             foreach ($penjualan as $row) {
                 $this->checkPageBreak($pdf, 15);
-                
+
                 $fill = ($no % 2 == 0) ? 1 : 0;
                 $pdf->SetFillColor(240, 240, 240);
 
@@ -462,7 +480,7 @@ class LaporanController
             }
 
             $this->checkPageBreak($pdf, 15);
-            
+
             $pdf->SetFont('helvetica', 'B', 9);
             $pdf->SetFillColor(66, 139, 202);
             $pdf->SetTextColor(255, 255, 255);
@@ -481,20 +499,19 @@ class LaporanController
         $currentY = $pdf->GetY();
         $pageHeight = $pdf->getPageHeight();
         $bottomMargin = 80;
-        
+
         if (($currentY + $height) > ($pageHeight - $bottomMargin)) {
             $pdf->AddPage();
-            
+
             $pdf->SetFont('helvetica', 'B', 16);
             $pdf->Cell(0, 10, $this->company_name, 0, 1, 'C');
-            
+
             $pdf->SetFont('helvetica', '', 10);
             $pdf->Cell(0, 6, $this->company_address, 0, 1, 'C');
             $pdf->Cell(0, 6, $this->company_phone, 0, 1, 'C');
-            
-            // Garis di bawah informasi perusahaan untuk halaman baru
+
             $pdf->Line(15, $pdf->GetY() + 3, $pdf->getPageWidth() - 15, $pdf->GetY() + 3);
-            
+
             $pdf->Ln(10);
         }
     }
@@ -503,50 +520,45 @@ class LaporanController
     {
         $currentY = $pdf->GetY();
         $pageHeight = $pdf->getPageHeight();
-        $signatureHeight = 60;
+        $signatureHeight = 40;
         $bottomMargin = 15;
-        
+
         $requiredSpace = $signatureHeight + $bottomMargin;
         $availableSpace = $pageHeight - $currentY - $bottomMargin;
-        
+
         if ($availableSpace < $signatureHeight) {
             $pdf->AddPage();
             $currentY = $pdf->GetY();
         }
-        
+
         $signatureStartY = $pageHeight - $signatureHeight - $bottomMargin;
-        
+
         if ($currentY < $signatureStartY) {
             $pdf->SetY($signatureStartY);
         } else {
-            $pdf->Ln(10);
+            $pdf->Ln(5);
         }
-        
+
         $pdf->SetTextColor(0, 0, 0);
         $pdf->SetFont('helvetica', '', 10);
-        
+
         $pdf->Cell(180, 6, '', 0, 0);
         $pdf->Cell(0, 6, "Bukittinggi, " . date('d F Y'), 0, 1, 'L');
-        
+
         $pdf->Cell(180, 6, '', 0, 0);
         $pdf->Cell(0, 6, "Mengetahui,", 0, 1, 'L');
-        
+
         $pdf->Cell(180, 6, '', 0, 0);
         $pdf->Cell(0, 6, "Pimpinan " . $this->company_name, 0, 1, 'L');
-        
-        $pdf->Ln(25);
-        
+
+        $pdf->Ln(15);
+
         $pdf->SetFont('helvetica', 'B', 10);
         $pdf->Cell(180, 6, '', 0, 0);
         $pdf->Cell(0, 6, "(_____________________)", 0, 1, 'L');
-        
+
         $pdf->SetFont('helvetica', '', 9);
         $pdf->Cell(180, 6, '', 0, 0);
         $pdf->Cell(0, 6, "Nama & Tanda Tangan", 0, 1, 'L');
-        
-        $pdf->Ln(5);
-        $pdf->SetFont('helvetica', 'I', 8);
-        $pdf->Cell(0, 4, 'Dokumen ini telah ditandatangani secara elektronik pada: ' . date('d/m/Y H:i:s'), 0, 1, 'C');
     }
 }
-?>

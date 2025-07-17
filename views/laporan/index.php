@@ -47,7 +47,20 @@
                             </a>
                           </div>
                         </div>
-                    </div>
+                      </div>
+
+                      <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card">
+                          <div class="card-body text-center">
+                            <i class="mdi mdi-account-multiple display-4 text-secondary"></i>
+                            <h5 class="card-title">Laporan Member</h5>
+                            <p class="card-text">Data member dan aktivitas</p>
+                            <a href="?controller=laporan&action=member" class="btn btn-secondary btn-sm">
+                              <i class="mdi mdi-eye"></i> Lihat
+                            </a>
+                          </div>
+                        </div>
+                      </div>
 
                       <div class="col-md-6 col-lg-4 mb-4">
                         <div class="card">
