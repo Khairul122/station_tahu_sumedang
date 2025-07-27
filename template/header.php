@@ -29,4 +29,5 @@
   <link rel="stylesheet" href="assets/css/vertical-layout-light/style.css" />
   <link rel="shortcut icon" href="assets/images/favicon.png" />
   <link href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
