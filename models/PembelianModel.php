@@ -7,9 +7,17 @@ class PembelianModel {
         $this->conn = $conn;
     }
     
-    public function getAllProduk() {
-        $query = "SELECT produk_id, nama_produk, harga, stok, kategori, poin_reward FROM produk WHERE stok > 0 ORDER BY nama_produk";
-        $result = $this->conn->query($query);
+    public function getAllProduk($storeId = null) {
+        if ($storeId) {
+            $query = "SELECT produk_id, nama_produk, harga, stok, kategori, poin_reward, foto_produk FROM produk WHERE stok > 0 AND store_id = ? ORDER BY nama_produk";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bind_param("i", $storeId);
+            $stmt->execute();
+            $result = $stmt->get_result();
+        } else {
+            $query = "SELECT produk_id, nama_produk, harga, stok, kategori, poin_reward, foto_produk FROM produk WHERE stok > 0 ORDER BY nama_produk";
+            $result = $this->conn->query($query);
+        }
         
         $produk = [];
         if ($result) {
@@ -21,9 +29,17 @@ class PembelianModel {
         return $produk;
     }
     
-    public function getProdukByCategory() {
-        $query = "SELECT kategori, produk_id, nama_produk, harga, stok, poin_reward FROM produk WHERE stok > 0 ORDER BY kategori, nama_produk";
-        $result = $this->conn->query($query);
+    public function getProdukByCategory($storeId = null) {
+        if ($storeId) {
+            $query = "SELECT kategori, produk_id, nama_produk, harga, stok, poin_reward, foto_produk FROM produk WHERE stok > 0 AND store_id = ? ORDER BY kategori, nama_produk";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bind_param("i", $storeId);
+            $stmt->execute();
+            $result = $stmt->get_result();
+        } else {
+            $query = "SELECT kategori, produk_id, nama_produk, harga, stok, poin_reward, foto_produk FROM produk WHERE stok > 0 ORDER BY kategori, nama_produk";
+            $result = $this->conn->query($query);
+        }
         
         $produkByCategory = [];
         if ($result) {
@@ -35,9 +51,15 @@ class PembelianModel {
         return $produkByCategory;
     }
     
-    public function getProdukById($produkId) {
-        $stmt = $this->conn->prepare("SELECT produk_id, nama_produk, harga, stok, kategori, poin_reward FROM produk WHERE produk_id = ?");
-        $stmt->bind_param("i", $produkId);
+    public function getProdukById($produkId, $storeId = null) {
+        if ($storeId) {
+            $stmt = $this->conn->prepare("SELECT produk_id, nama_produk, harga, stok, kategori, poin_reward, foto_produk FROM produk WHERE produk_id = ? AND store_id = ?");
+            $stmt->bind_param("ii", $produkId, $storeId);
+        } else {
+            $stmt = $this->conn->prepare("SELECT produk_id, nama_produk, harga, stok, kategori, poin_reward, foto_produk FROM produk WHERE produk_id = ?");
+            $stmt->bind_param("i", $produkId);
+        }
+        
         $stmt->execute();
         $result = $stmt->get_result();
         
@@ -45,6 +67,20 @@ class PembelianModel {
             return $result->fetch_assoc();
         }
         return null;
+    }
+    
+    public function getAllStores() {
+        $query = "SELECT id_store, nama_store, alamat_store FROM store WHERE status_store = 'aktif' ORDER BY nama_store";
+        $result = $this->conn->query($query);
+        
+        $stores = [];
+        if ($result) {
+            while ($row = $result->fetch_assoc()) {
+                $stores[] = $row;
+            }
+        }
+        
+        return $stores;
     }
     
     public function getMemberData($userId) {
@@ -75,12 +111,12 @@ class PembelianModel {
         return null;
     }
     
-    public function calculateTotal($items, $diskonPersen = 0) {
+    public function calculateTotal($items, $diskonPersen = 0, $storeId = null) {
         $totalSebelumDiskon = 0;
         $totalPoinItem = 0;
         
         foreach ($items as $item) {
-            $produk = $this->getProdukById($item['produk_id']);
+            $produk = $this->getProdukById($item['produk_id'], $storeId);
             if ($produk) {
                 $subtotal = $produk['harga'] * $item['jumlah'];
                 $totalSebelumDiskon += $subtotal;
@@ -99,14 +135,16 @@ class PembelianModel {
         ];
     }
     
-    public function createTransaksi($customerId, $items, $metodePembayaran = 'tunai') {
+    public function createTransaksi($customerId, $items, $metodePembayaran = 'tunai', $storeId = 1, $buktiPembayaran = null) {
         try {
+            $this->conn->begin_transaction();
+            
             $memberData = $this->getMemberDataByCustomerId($customerId);
             if (!$memberData) {
                 throw new Exception("Data member tidak ditemukan untuk customer_id: $customerId");
             }
             
-            $calculation = $this->calculateTotal($items, $memberData['diskon_persen']);
+            $calculation = $this->calculateTotal($items, $memberData['diskon_persen'], $storeId);
             $poinDidapat = ($calculation['total_poin_item'] * $memberData['poin_per_pembelian']) + floor($calculation['total_bayar'] / 10000);
             
             $newTotalPembelian = $memberData['total_pembelian'] + $calculation['total_bayar'];
@@ -116,21 +154,23 @@ class PembelianModel {
             $newMembership = $this->calculateNewMembership($newTotalPembelian);
             
             $stmt = $this->conn->prepare("
-                INSERT INTO transaksi (customer_id, total_sebelum_diskon, diskon_membership, total_bayar, poin_didapat, metode_pembayaran) 
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO transaksi (customer_id, store_id, total_sebelum_diskon, diskon_membership, total_bayar, poin_didapat, metode_pembayaran, bukti_pembayaran) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ");
             
             if (!$stmt) {
                 throw new Exception("Gagal menyiapkan statement transaksi: " . $this->conn->error);
             }
             
-            $stmt->bind_param("idddis", 
+            $stmt->bind_param("iiddisss", 
                 $customerId, 
+                $storeId,
                 $calculation['total_sebelum_diskon'], 
                 $calculation['diskon_amount'], 
                 $calculation['total_bayar'], 
                 $poinDidapat, 
-                $metodePembayaran
+                $metodePembayaran,
+                $buktiPembayaran
             );
             
             if (!$stmt->execute()) {
@@ -143,9 +183,9 @@ class PembelianModel {
             }
             
             foreach ($items as $item) {
-                $produk = $this->getProdukById($item['produk_id']);
+                $produk = $this->getProdukById($item['produk_id'], $storeId);
                 if (!$produk) {
-                    throw new Exception("Produk dengan ID {$item['produk_id']} tidak ditemukan");
+                    throw new Exception("Produk dengan ID {$item['produk_id']} tidak ditemukan di store ini");
                 }
                 
                 if ($produk['stok'] < $item['jumlah']) {
@@ -178,15 +218,19 @@ class PembelianModel {
                     throw new Exception("Gagal menyimpan detail transaksi: " . $detailStmt->error);
                 }
                 
-                $updateStokStmt = $this->conn->prepare("UPDATE produk SET stok = stok - ? WHERE produk_id = ?");
+                $updateStokStmt = $this->conn->prepare("UPDATE produk SET stok = stok - ? WHERE produk_id = ? AND store_id = ?");
                 if (!$updateStokStmt) {
                     throw new Exception("Gagal menyiapkan statement update stok: " . $this->conn->error);
                 }
                 
-                $updateStokStmt->bind_param("ii", $item['jumlah'], $item['produk_id']);
+                $updateStokStmt->bind_param("iii", $item['jumlah'], $item['produk_id'], $storeId);
                 
                 if (!$updateStokStmt->execute()) {
                     throw new Exception("Gagal mengupdate stok produk {$produk['nama_produk']}: " . $updateStokStmt->error);
+                }
+                
+                if ($updateStokStmt->affected_rows === 0) {
+                    throw new Exception("Produk {$produk['nama_produk']} tidak ditemukan di store yang dipilih");
                 }
             }
             
@@ -246,6 +290,8 @@ class PembelianModel {
                 ];
             }
             
+            $this->conn->commit();
+            
             return [
                 'success' => true,
                 'message' => 'Transaksi berhasil disimpan',
@@ -256,6 +302,7 @@ class PembelianModel {
             ];
             
         } catch (Exception $e) {
+            $this->conn->rollback();
             error_log("Error dalam createTransaksi: " . $e->getMessage());
             return [
                 'success' => false,
@@ -311,10 +358,13 @@ class PembelianModel {
                 t.*,
                 c.nama_customer,
                 c.no_telepon,
-                m.nama_membership
+                m.nama_membership,
+                s.nama_store,
+                s.alamat_store
             FROM transaksi t
             JOIN customers c ON t.customer_id = c.customer_id
             JOIN membership m ON c.membership_id = m.membership_id
+            JOIN store s ON t.store_id = s.id_store
             WHERE t.transaksi_id = ?
         ");
         $stmt->bind_param("i", $transaksiId);
@@ -328,7 +378,8 @@ class PembelianModel {
                 SELECT 
                     dt.*,
                     p.nama_produk,
-                    p.kategori
+                    p.kategori,
+                    p.foto_produk
                 FROM detail_transaksi dt
                 JOIN produk p ON dt.produk_id = p.produk_id
                 WHERE dt.transaksi_id = ?
@@ -362,9 +413,12 @@ class PembelianModel {
                 t.total_bayar,
                 t.poin_didapat,
                 t.metode_pembayaran,
+                t.bukti_pembayaran,
+                s.nama_store,
                 COUNT(dt.detail_id) as total_item
             FROM transaksi t
             LEFT JOIN detail_transaksi dt ON t.transaksi_id = dt.transaksi_id
+            LEFT JOIN store s ON t.store_id = s.id_store
             WHERE t.customer_id = ?
             GROUP BY t.transaksi_id
             ORDER BY t.tanggal_transaksi DESC
@@ -384,13 +438,13 @@ class PembelianModel {
         return $history;
     }
     
-    public function validateStock($items) {
+    public function validateStock($items, $storeId = null) {
         $errors = [];
         
         foreach ($items as $item) {
-            $produk = $this->getProdukById($item['produk_id']);
+            $produk = $this->getProdukById($item['produk_id'], $storeId);
             if (!$produk) {
-                $errors[] = "Produk dengan ID {$item['produk_id']} tidak ditemukan";
+                $errors[] = "Produk dengan ID {$item['produk_id']} tidak ditemukan di store yang dipilih";
                 continue;
             }
             
@@ -414,15 +468,27 @@ class PembelianModel {
         }
     }
     
-    public function searchProduk($keyword) {
+    public function searchProduk($keyword, $storeId = null) {
         $searchTerm = "%$keyword%";
-        $stmt = $this->conn->prepare("
-            SELECT produk_id, nama_produk, harga, stok, kategori, poin_reward 
-            FROM produk 
-            WHERE (nama_produk LIKE ? OR kategori LIKE ?) AND stok > 0 
-            ORDER BY nama_produk
-        ");
-        $stmt->bind_param("ss", $searchTerm, $searchTerm);
+        
+        if ($storeId) {
+            $stmt = $this->conn->prepare("
+                SELECT produk_id, nama_produk, harga, stok, kategori, poin_reward, foto_produk 
+                FROM produk 
+                WHERE (nama_produk LIKE ? OR kategori LIKE ?) AND stok > 0 AND store_id = ?
+                ORDER BY nama_produk
+            ");
+            $stmt->bind_param("ssi", $searchTerm, $searchTerm, $storeId);
+        } else {
+            $stmt = $this->conn->prepare("
+                SELECT produk_id, nama_produk, harga, stok, kategori, poin_reward, foto_produk 
+                FROM produk 
+                WHERE (nama_produk LIKE ? OR kategori LIKE ?) AND stok > 0 
+                ORDER BY nama_produk
+            ");
+            $stmt->bind_param("ss", $searchTerm, $searchTerm);
+        }
+        
         $stmt->execute();
         $result = $stmt->get_result();
         

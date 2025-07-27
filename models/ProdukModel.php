@@ -7,12 +7,24 @@ class ProdukModel {
         $this->conn = $conn;
     }
     
-    public function getAllProduk() {
-        $query = "SELECT p.*, s.nama_store 
-                  FROM produk p 
-                  LEFT JOIN store s ON p.store_id = s.id_store 
-                  ORDER BY p.produk_id DESC";
-        $result = $this->conn->query($query);
+    public function getAllProduk($storeId = null) {
+        if ($storeId) {
+            $query = "SELECT p.*, s.nama_store 
+                      FROM produk p 
+                      LEFT JOIN store s ON p.store_id = s.id_store 
+                      WHERE p.store_id = ?
+                      ORDER BY p.produk_id DESC";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bind_param("i", $storeId);
+            $stmt->execute();
+            $result = $stmt->get_result();
+        } else {
+            $query = "SELECT p.*, s.nama_store 
+                      FROM produk p 
+                      LEFT JOIN store s ON p.store_id = s.id_store 
+                      ORDER BY p.produk_id DESC";
+            $result = $this->conn->query($query);
+        }
         
         $produk = [];
         if ($result) {
@@ -33,9 +45,17 @@ class ProdukModel {
         return $result ? $result->fetch_assoc() : null;
     }
     
-    public function getAllStores() {
-        $query = "SELECT * FROM store WHERE status_store = 'aktif' ORDER BY nama_store";
-        $result = $this->conn->query($query);
+    public function getAllStores($storeId = null) {
+        if ($storeId) {
+            $query = "SELECT * FROM store WHERE id_store = ? AND status_store = 'aktif' ORDER BY nama_store";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bind_param("i", $storeId);
+            $stmt->execute();
+            $result = $stmt->get_result();
+        } else {
+            $query = "SELECT * FROM store WHERE status_store = 'aktif' ORDER BY nama_store";
+            $result = $this->conn->query($query);
+        }
         
         $stores = [];
         if ($result) {
@@ -209,9 +229,17 @@ class ProdukModel {
         }
     }
     
-    public function getKategoriList() {
-        $query = "SELECT DISTINCT kategori FROM produk WHERE kategori IS NOT NULL ORDER BY kategori";
-        $result = $this->conn->query($query);
+    public function getKategoriList($storeId = null) {
+        if ($storeId) {
+            $query = "SELECT DISTINCT kategori FROM produk WHERE kategori IS NOT NULL AND store_id = ? ORDER BY kategori";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bind_param("i", $storeId);
+            $stmt->execute();
+            $result = $stmt->get_result();
+        } else {
+            $query = "SELECT DISTINCT kategori FROM produk WHERE kategori IS NOT NULL ORDER BY kategori";
+            $result = $this->conn->query($query);
+        }
         
         $kategori = [];
         if ($result) {
@@ -223,17 +251,30 @@ class ProdukModel {
         return $kategori;
     }
     
-    public function getStokRendah($limit = 10) {
-        $query = "SELECT p.*, s.nama_store 
-                  FROM produk p 
-                  LEFT JOIN store s ON p.store_id = s.id_store 
-                  WHERE p.stok < 20 
-                  ORDER BY p.stok ASC 
-                  LIMIT ?";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bind_param("i", $limit);
-        $stmt->execute();
-        $result = $stmt->get_result();
+    public function getStokRendah($limit = 10, $storeId = null) {
+        if ($storeId) {
+            $query = "SELECT p.*, s.nama_store 
+                      FROM produk p 
+                      LEFT JOIN store s ON p.store_id = s.id_store 
+                      WHERE p.stok < 20 AND p.store_id = ?
+                      ORDER BY p.stok ASC 
+                      LIMIT ?";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bind_param("ii", $storeId, $limit);
+            $stmt->execute();
+            $result = $stmt->get_result();
+        } else {
+            $query = "SELECT p.*, s.nama_store 
+                      FROM produk p 
+                      LEFT JOIN store s ON p.store_id = s.id_store 
+                      WHERE p.stok < 20 
+                      ORDER BY p.stok ASC 
+                      LIMIT ?";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bind_param("i", $limit);
+            $stmt->execute();
+            $result = $stmt->get_result();
+        }
         
         $produk = [];
         if ($result) {
@@ -271,16 +312,31 @@ class ProdukModel {
         return $errors;
     }
     
-    public function searchProduk($keyword) {
+    public function searchProduk($keyword, $storeId = null) {
         $keyword = "%$keyword%";
-        $stmt = $this->conn->prepare("SELECT p.*, s.nama_store 
-                                      FROM produk p 
-                                      LEFT JOIN store s ON p.store_id = s.id_store 
-                                      WHERE p.nama_produk LIKE ? OR p.kategori LIKE ? OR s.nama_store LIKE ? 
-                                      ORDER BY p.nama_produk");
-        $stmt->bind_param("sss", $keyword, $keyword, $keyword);
-        $stmt->execute();
-        $result = $stmt->get_result();
+        
+        if ($storeId) {
+            $query = "SELECT p.*, s.nama_store 
+                      FROM produk p 
+                      LEFT JOIN store s ON p.store_id = s.id_store 
+                      WHERE (p.nama_produk LIKE ? OR p.kategori LIKE ? OR s.nama_store LIKE ?) 
+                      AND p.store_id = ?
+                      ORDER BY p.nama_produk";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bind_param("sssi", $keyword, $keyword, $keyword, $storeId);
+            $stmt->execute();
+            $result = $stmt->get_result();
+        } else {
+            $query = "SELECT p.*, s.nama_store 
+                      FROM produk p 
+                      LEFT JOIN store s ON p.store_id = s.id_store 
+                      WHERE p.nama_produk LIKE ? OR p.kategori LIKE ? OR s.nama_store LIKE ? 
+                      ORDER BY p.nama_produk";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bind_param("sss", $keyword, $keyword, $keyword);
+            $stmt->execute();
+            $result = $stmt->get_result();
+        }
         
         $produk = [];
         if ($result) {
@@ -292,9 +348,18 @@ class ProdukModel {
         return $produk;
     }
     
-    public function getTotalProduk() {
-        $query = "SELECT COUNT(*) as total FROM produk";
-        $result = $this->conn->query($query);
+    public function getTotalProduk($storeId = null) {
+        if ($storeId) {
+            $query = "SELECT COUNT(*) as total FROM produk WHERE store_id = ?";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bind_param("i", $storeId);
+            $stmt->execute();
+            $result = $stmt->get_result();
+        } else {
+            $query = "SELECT COUNT(*) as total FROM produk";
+            $result = $this->conn->query($query);
+        }
+        
         return $result ? $result->fetch_assoc()['total'] : 0;
     }
     
@@ -312,5 +377,75 @@ class ProdukModel {
         }
         
         return $produk;
+    }
+    
+    public function getStoresByProduk($produk_id) {
+        $stmt = $this->conn->prepare("
+            SELECT s.id_store, s.nama_store, s.alamat_store, p.stok, p.harga
+            FROM produk p
+            JOIN store s ON p.store_id = s.id_store
+            WHERE p.nama_produk = (SELECT nama_produk FROM produk WHERE produk_id = ?)
+            AND s.status_store = 'aktif'
+            ORDER BY s.nama_store
+        ");
+        $stmt->bind_param("i", $produk_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        $stores = [];
+        if ($result) {
+            while ($row = $result->fetch_assoc()) {
+                $stores[] = $row;
+            }
+        }
+        
+        return $stores;
+    }
+    
+    public function getStatsByStore($storeId = null) {
+        $stats = [];
+        
+        if ($storeId) {
+            $query = "SELECT 
+                        COUNT(*) as total_produk,
+                        SUM(stok) as total_stok,
+                        COUNT(CASE WHEN stok < 20 THEN 1 END) as stok_rendah,
+                        COUNT(CASE WHEN stok = 0 THEN 1 END) as stok_habis,
+                        COUNT(DISTINCT kategori) as total_kategori
+                      FROM produk 
+                      WHERE store_id = ?";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bind_param("i", $storeId);
+            $stmt->execute();
+            $result = $stmt->get_result();
+        } else {
+            $query = "SELECT 
+                        COUNT(*) as total_produk,
+                        SUM(stok) as total_stok,
+                        COUNT(CASE WHEN stok < 20 THEN 1 END) as stok_rendah,
+                        COUNT(CASE WHEN stok = 0 THEN 1 END) as stok_habis,
+                        COUNT(DISTINCT kategori) as total_kategori
+                      FROM produk";
+            $result = $this->conn->query($query);
+        }
+        
+        if ($result) {
+            $stats = $result->fetch_assoc();
+        }
+        
+        return $stats;
+    }
+    
+    public function checkProdukAccess($produkId, $userRole, $userStoreId = null) {
+        if ($userRole === 'admin' || $userRole === 'pimpinan') {
+            return true;
+        }
+        
+        if ($userRole === 'manajer' && $userStoreId) {
+            $produk = $this->getProdukById($produkId);
+            return $produk && $produk['store_id'] == $userStoreId;
+        }
+        
+        return false;
     }
 }

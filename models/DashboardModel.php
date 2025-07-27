@@ -54,6 +54,84 @@ class DashboardModel {
         return $stats;
     }
     
+    public function getManagerStats($storeId = null) {
+        $stats = [];
+        
+        if ($storeId) {
+            $query = "SELECT COUNT(*) as total FROM produk WHERE store_id = ?";
+            $stmt = $this->conn->prepare($query);
+            if ($stmt) {
+                $stmt->bind_param("i", $storeId);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                $stats['total_produk'] = $result ? $result->fetch_assoc()['total'] : 0;
+                $stmt->close();
+            } else {
+                $stats['total_produk'] = 0;
+            }
+            
+            $query = "SELECT COUNT(*) as total FROM produk WHERE stok < 20 AND store_id = ?";
+            $stmt = $this->conn->prepare($query);
+            if ($stmt) {
+                $stmt->bind_param("i", $storeId);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                $stats['produk_stok_rendah'] = $result ? $result->fetch_assoc()['total'] : 0;
+                $stmt->close();
+            } else {
+                $stats['produk_stok_rendah'] = 0;
+            }
+            
+            $query = "SELECT SUM(t.total_bayar) as total 
+                      FROM transaksi t 
+                      WHERE DATE(t.tanggal_transaksi) = CURDATE() AND t.store_id = ?";
+            $stmt = $this->conn->prepare($query);
+            if ($stmt) {
+                $stmt->bind_param("i", $storeId);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                $row = $result ? $result->fetch_assoc() : null;
+                $stats['penjualan_hari_ini'] = $row ? ($row['total'] ?? 0) : 0;
+                $stmt->close();
+            } else {
+                $stats['penjualan_hari_ini'] = 0;
+            }
+            
+            $query = "SELECT COUNT(*) as total 
+                      FROM transaksi t 
+                      WHERE DATE(t.tanggal_transaksi) = CURDATE() AND t.store_id = ?";
+            $stmt = $this->conn->prepare($query);
+            if ($stmt) {
+                $stmt->bind_param("i", $storeId);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                $stats['transaksi_hari_ini'] = $result ? $result->fetch_assoc()['total'] : 0;
+                $stmt->close();
+            } else {
+                $stats['transaksi_hari_ini'] = 0;
+            }
+        } else {
+            $query = "SELECT COUNT(*) as total FROM produk";
+            $result = $this->conn->query($query);
+            $stats['total_produk'] = $result ? $result->fetch_assoc()['total'] : 0;
+            
+            $query = "SELECT COUNT(*) as total FROM produk WHERE stok < 20";
+            $result = $this->conn->query($query);
+            $stats['produk_stok_rendah'] = $result ? $result->fetch_assoc()['total'] : 0;
+            
+            $query = "SELECT SUM(total_bayar) as total FROM transaksi WHERE DATE(tanggal_transaksi) = CURDATE()";
+            $result = $this->conn->query($query);
+            $row = $result ? $result->fetch_assoc() : null;
+            $stats['penjualan_hari_ini'] = $row ? ($row['total'] ?? 0) : 0;
+            
+            $query = "SELECT COUNT(*) as total FROM transaksi WHERE DATE(tanggal_transaksi) = CURDATE()";
+            $result = $this->conn->query($query);
+            $stats['transaksi_hari_ini'] = $result ? $result->fetch_assoc()['total'] : 0;
+        }
+        
+        return $stats;
+    }
+    
     public function getMemberStats($userId) {
         $stats = [];
         
@@ -341,17 +419,34 @@ class DashboardModel {
         return array_slice($activities, 0, 5);
     }
     
-    public function getSalesChart() {
+    public function getSalesChart($storeId = null) {
         $chartData = [];
         
         for ($i = 6; $i >= 0; $i--) {
             $date = date('Y-m-d', strtotime("-$i days"));
             $dayName = date('D', strtotime("-$i days"));
             
-            $query = "SELECT SUM(total_bayar) as total FROM transaksi WHERE DATE(tanggal_transaksi) = '$date'";
-            $result = $this->conn->query($query);
-            $row = $result ? $result->fetch_assoc() : null;
-            $total = $row ? ($row['total'] ?? 0) : 0;
+            if ($storeId) {
+                $query = "SELECT SUM(t.total_bayar) as total 
+                          FROM transaksi t 
+                          WHERE DATE(t.tanggal_transaksi) = ? AND t.store_id = ?";
+                $stmt = $this->conn->prepare($query);
+                if ($stmt) {
+                    $stmt->bind_param("si", $date, $storeId);
+                    $stmt->execute();
+                    $result = $stmt->get_result();
+                    $row = $result ? $result->fetch_assoc() : null;
+                    $total = $row ? ($row['total'] ?? 0) : 0;
+                    $stmt->close();
+                } else {
+                    $total = 0;
+                }
+            } else {
+                $query = "SELECT SUM(total_bayar) as total FROM transaksi WHERE DATE(tanggal_transaksi) = '$date'";
+                $result = $this->conn->query($query);
+                $row = $result ? $result->fetch_assoc() : null;
+                $total = $row ? ($row['total'] ?? 0) : 0;
+            }
             
             $chartData[] = [
                 'day' => $dayName,
@@ -362,22 +457,48 @@ class DashboardModel {
         return $chartData;
     }
     
-    public function getTopProducts() {
-        $query = "SELECT 
-                    p.nama_produk,
-                    SUM(dt.jumlah) as total_terjual
-                  FROM detail_transaksi dt
-                  JOIN produk p ON dt.produk_id = p.produk_id
-                  GROUP BY dt.produk_id
-                  ORDER BY total_terjual DESC
-                  LIMIT 5";
+    public function getTopProducts($storeId = null) {
+        if ($storeId) {
+            $query = "SELECT 
+                        p.nama_produk,
+                        SUM(dt.jumlah) as total_terjual
+                      FROM detail_transaksi dt
+                      JOIN produk p ON dt.produk_id = p.produk_id
+                      JOIN transaksi t ON dt.transaksi_id = t.transaksi_id
+                      WHERE p.store_id = ?
+                      GROUP BY dt.produk_id
+                      ORDER BY total_terjual DESC
+                      LIMIT 5";
+            
+            $stmt = $this->conn->prepare($query);
+            if ($stmt) {
+                $stmt->bind_param("i", $storeId);
+                $stmt->execute();
+                $result = $stmt->get_result();
+            } else {
+                $result = false;
+            }
+        } else {
+            $query = "SELECT 
+                        p.nama_produk,
+                        SUM(dt.jumlah) as total_terjual
+                      FROM detail_transaksi dt
+                      JOIN produk p ON dt.produk_id = p.produk_id
+                      GROUP BY dt.produk_id
+                      ORDER BY total_terjual DESC
+                      LIMIT 5";
+            
+            $result = $this->conn->query($query);
+        }
         
-        $result = $this->conn->query($query);
         $products = [];
         
         if ($result) {
             while ($row = $result->fetch_assoc()) {
                 $products[] = $row;
+            }
+            if (isset($stmt)) {
+                $stmt->close();
             }
         }
         
@@ -423,18 +544,79 @@ class DashboardModel {
         return $result ? $result->fetch_assoc()['total'] : 0;
     }
     
-    public function getStokRendah() {
-        $query = "SELECT nama_produk, stok FROM produk WHERE stok < 20 ORDER BY stok ASC";
-        $result = $this->conn->query($query);
+    public function getStokRendah($storeId = null) {
+        if ($storeId) {
+            $query = "SELECT nama_produk, stok FROM produk WHERE stok < 20 AND store_id = ? ORDER BY stok ASC";
+            $stmt = $this->conn->prepare($query);
+            if ($stmt) {
+                $stmt->bind_param("i", $storeId);
+                $stmt->execute();
+                $result = $stmt->get_result();
+            } else {
+                $result = false;
+            }
+        } else {
+            $query = "SELECT nama_produk, stok FROM produk WHERE stok < 20 ORDER BY stok ASC";
+            $result = $this->conn->query($query);
+        }
+        
         $products = [];
         
         if ($result) {
             while ($row = $result->fetch_assoc()) {
                 $products[] = $row;
             }
+            if (isset($stmt)) {
+                $stmt->close();
+            }
         }
         
         return $products;
+    }
+    
+    public function getProductCategories($storeId = null) {
+        if ($storeId) {
+            $query = "SELECT 
+                        kategori,
+                        COUNT(*) as total_produk,
+                        SUM(stok) as total_stok
+                      FROM produk 
+                      WHERE store_id = ?
+                      GROUP BY kategori 
+                      ORDER BY total_produk DESC";
+            
+            $stmt = $this->conn->prepare($query);
+            if ($stmt) {
+                $stmt->bind_param("i", $storeId);
+                $stmt->execute();
+                $result = $stmt->get_result();
+            } else {
+                $result = false;
+            }
+        } else {
+            $query = "SELECT 
+                        kategori,
+                        COUNT(*) as total_produk,
+                        SUM(stok) as total_stok
+                      FROM produk 
+                      GROUP BY kategori 
+                      ORDER BY total_produk DESC";
+            
+            $result = $this->conn->query($query);
+        }
+        
+        $categories = [];
+        
+        if ($result) {
+            while ($row = $result->fetch_assoc()) {
+                $categories[] = $row;
+            }
+            if (isset($stmt)) {
+                $stmt->close();
+            }
+        }
+        
+        return $categories;
     }
     
     public function getCustomerBirthday() {

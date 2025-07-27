@@ -18,6 +18,8 @@ class DashboardController {
             $this->admin();
         } elseif ($role === 'pimpinan') {
             $this->pimpinan();
+        } elseif ($role === 'manajer') {
+            $this->manajer();
         } elseif ($role === 'member') {
             $this->member();
         } else {
@@ -71,6 +73,29 @@ class DashboardController {
             'topProducts' => $topProducts,
             'membershipStats' => $membershipStats,
             'activities' => $recentActivities
+        ]);
+    }
+    
+    public function manajer() {
+        $this->authModel->requireRole(['manajer']);
+        
+        $user = $this->authModel->getLoggedInUser();
+        $storeId = $user['store_id'] ?? null;
+        
+        $stats = $this->dashboardModel->getManagerStats($storeId);
+        $salesChart = $this->dashboardModel->getSalesChart($storeId);
+        $topProducts = $this->dashboardModel->getTopProducts($storeId);
+        $stokRendah = $this->dashboardModel->getStokRendah($storeId);
+        $productCategories = $this->dashboardModel->getProductCategories($storeId);
+        
+        loadView('dashboard/manajer', [
+            'user' => $user,
+            'title' => 'Dashboard Manajer',
+            'stats' => $stats,
+            'salesChart' => $salesChart,
+            'topProducts' => $topProducts,
+            'stokRendah' => $stokRendah,
+            'productCategories' => $productCategories
         ]);
     }
     

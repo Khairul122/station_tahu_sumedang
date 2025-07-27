@@ -40,11 +40,12 @@ class AuthModel {
                     }
                 }
                 
-                if ($user['role'] === 'manajer' || $user['role'] === 'admin') {
+                if ($user['role'] === 'manajer' && $user['store_id']) {
                     $storeData = $this->getStoreData($user['store_id']);
                     if ($storeData) {
                         $_SESSION['nama_store'] = $storeData['nama_store'];
                         $_SESSION['alamat_store'] = $storeData['alamat_store'];
+                        $_SESSION['manajer_store'] = $storeData['manajer_store'];
                     }
                 }
                 
@@ -100,9 +101,10 @@ class AuthModel {
                 $userData['total_pembelian'] = $_SESSION['total_pembelian'] ?? 0;
             }
             
-            if ($_SESSION['role'] === 'manajer' || $_SESSION['role'] === 'admin') {
+            if ($_SESSION['role'] === 'manajer') {
                 $userData['nama_store'] = $_SESSION['nama_store'] ?? null;
                 $userData['alamat_store'] = $_SESSION['alamat_store'] ?? null;
+                $userData['manajer_store'] = $_SESSION['manajer_store'] ?? null;
             }
             
             return $userData;
@@ -163,6 +165,38 @@ class AuthModel {
         $this->requireRole(['admin', 'pimpinan', 'manajer']);
     }
     
+    public function getUserStoreId() {
+        if ($this->isLoggedIn() && $_SESSION['role'] === 'manajer') {
+            return $_SESSION['store_id'] ?? null;
+        }
+        return null;
+    }
+    
+    public function isManagerOfStore($storeId) {
+        if ($this->isLoggedIn() && $_SESSION['role'] === 'manajer') {
+            return $_SESSION['store_id'] == $storeId;
+        }
+        return false;
+    }
+    
+    public function canAccessStore($storeId) {
+        if (!$this->isLoggedIn()) {
+            return false;
+        }
+        
+        $role = $_SESSION['role'];
+        
+        if ($role === 'admin' || $role === 'pimpinan') {
+            return true;
+        }
+        
+        if ($role === 'manajer') {
+            return $_SESSION['store_id'] == $storeId;
+        }
+        
+        return false;
+    }
+    
     public function getMemberData($userId) {
         $stmt = $this->conn->prepare("
             SELECT 
@@ -191,7 +225,7 @@ class AuthModel {
             return null;
         }
         
-        $stmt = $this->conn->prepare("SELECT nama_store, alamat_store FROM store WHERE id_store = ?");
+        $stmt = $this->conn->prepare("SELECT nama_store, alamat_store, manajer_store FROM store WHERE id_store = ? AND status_store = 'aktif'");
         $stmt->bind_param("i", $storeId);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -212,6 +246,19 @@ class AuthModel {
                 $_SESSION['nama_membership'] = $memberData['nama_membership'];
                 $_SESSION['total_poin'] = $memberData['total_poin'];
                 $_SESSION['total_pembelian'] = $memberData['total_pembelian'];
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    public function updateManagerSession($userId) {
+        if ($_SESSION['role'] === 'manajer' && $_SESSION['store_id']) {
+            $storeData = $this->getStoreData($_SESSION['store_id']);
+            if ($storeData) {
+                $_SESSION['nama_store'] = $storeData['nama_store'];
+                $_SESSION['alamat_store'] = $storeData['alamat_store'];
+                $_SESSION['manajer_store'] = $storeData['manajer_store'];
                 return true;
             }
         }

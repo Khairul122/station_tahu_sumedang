@@ -21,12 +21,14 @@ class PembelianController {
         
         $produkByCategory = $this->model->getProdukByCategory();
         $metodePembayaran = $this->model->getMetodePembayaran();
+        $stores = $this->model->getAllStores();
         $recentTransactions = $this->model->getMemberTransaksiHistory($memberData['customer_id'], 5, 0);
         
         $data = [
             'memberData' => $memberData,
             'produkByCategory' => $produkByCategory,
             'metodePembayaran' => $metodePembayaran,
+            'stores' => $stores,
             'recentTransactions' => $recentTransactions,
             'success' => $_GET['success'] ?? '',
             'error' => $_GET['error'] ?? ''
@@ -56,6 +58,18 @@ class PembelianController {
         
         $customerId = $memberData['customer_id'];
         $metodePembayaran = $_POST['metode_pembayaran'] ?? 'tunai';
+        $storeId = $_POST['store_id'] ?? 1;
+        $buktiPembayaran = null;
+        
+        if ($metodePembayaran === 'transfer' && isset($_FILES['bukti_pembayaran'])) {
+            $uploadResult = $this->handleBuktiUpload($_FILES['bukti_pembayaran']);
+            if ($uploadResult['success']) {
+                $buktiPembayaran = $uploadResult['filename'];
+            } else {
+                header('Location: index.php?controller=pembelian&error=' . urlencode($uploadResult['message']));
+                exit;
+            }
+        }
         
         $items = [];
         if (isset($_POST['produk_id']) && is_array($_POST['produk_id'])) {
@@ -79,14 +93,14 @@ class PembelianController {
             exit;
         }
         
-        $stockErrors = $this->model->validateStock($items);
+        $stockErrors = $this->model->validateStock($items, $storeId);
         if (!empty($stockErrors)) {
             $errorMessage = implode('. ', $stockErrors);
             header('Location: index.php?controller=pembelian&error=' . urlencode($errorMessage));
             exit;
         }
         
-        $result = $this->model->createTransaksi($customerId, $items, $metodePembayaran);
+        $result = $this->model->createTransaksi($customerId, $items, $metodePembayaran, $storeId, $buktiPembayaran);
         
         if ($result['success']) {
             $this->authModel->updateMemberSession($userId);
@@ -104,6 +118,63 @@ class PembelianController {
             header('Location: index.php?controller=pembelian&error=' . urlencode($result['message']));
         }
         exit;
+    }
+    
+    private function handleBuktiUpload($file) {
+        $uploadDir = 'bukti_pembayaran/';
+        
+        if (!is_dir($uploadDir)) {
+            if (!mkdir($uploadDir, 0755, true)) {
+                return [
+                    'success' => false,
+                    'message' => 'Gagal membuat direktori upload.'
+                ];
+            }
+        }
+        
+        $allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+        $maxSize = 5 * 1024 * 1024;
+        
+        if ($file['error'] !== UPLOAD_ERR_OK) {
+            return [
+                'success' => false,
+                'message' => 'Gagal upload bukti pembayaran.'
+            ];
+        }
+        
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mimeType = finfo_file($finfo, $file['tmp_name']);
+        finfo_close($finfo);
+        
+        if (!in_array($mimeType, $allowedTypes)) {
+            return [
+                'success' => false,
+                'message' => 'Format file tidak didukung. Gunakan JPG atau PNG.'
+            ];
+        }
+        
+        if ($file['size'] > $maxSize) {
+            return [
+                'success' => false,
+                'message' => 'Ukuran file terlalu besar. Maksimal 5MB.'
+            ];
+        }
+        
+        $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        $filename = 'bukti_' . time() . '_' . uniqid() . '.' . $extension;
+        $targetPath = $uploadDir . $filename;
+        
+        if (move_uploaded_file($file['tmp_name'], $targetPath)) {
+            return [
+                'success' => true,
+                'filename' => $filename
+            ];
+        } else {
+            return [
+                'success' => false,
+                'message' => 'Gagal mengupload file.'
+            ];
+        }
     }
     
     public function success() {
@@ -187,10 +258,11 @@ class PembelianController {
         $this->authModel->requireMemberRole();
         
         $keyword = $_GET['q'] ?? '';
+        $storeId = $_GET['store_id'] ?? null;
         $produk = [];
         
         if (!empty($keyword)) {
-            $produk = $this->model->searchProduk($keyword);
+            $produk = $this->model->searchProduk($keyword, $storeId);
         }
         
         header('Content-Type: application/json');
@@ -201,7 +273,8 @@ class PembelianController {
         $this->authModel->requireMemberRole();
         
         $produkId = $_GET['id'] ?? 0;
-        $produk = $this->model->getProdukById($produkId);
+        $storeId = $_GET['store_id'] ?? null;
+        $produk = $this->model->getProdukById($produkId, $storeId);
         
         if ($produk) {
             header('Content-Type: application/json');
@@ -232,6 +305,7 @@ class PembelianController {
         
         $input = json_decode(file_get_contents('php://input'), true);
         $items = $input['items'] ?? [];
+        $storeId = $input['store_id'] ?? 1;
         
         if (empty($items)) {
             http_response_code(400);
@@ -239,14 +313,14 @@ class PembelianController {
             return;
         }
         
-        $stockErrors = $this->model->validateStock($items);
+        $stockErrors = $this->model->validateStock($items, $storeId);
         if (!empty($stockErrors)) {
             http_response_code(400);
             echo json_encode(['error' => implode('. ', $stockErrors)]);
             return;
         }
         
-        $calculation = $this->model->calculateTotal($items, $memberData['diskon_persen']);
+        $calculation = $this->model->calculateTotal($items, $memberData['diskon_persen'], $storeId);
         $poinDidapat = ($calculation['total_poin_item'] * $memberData['poin_per_pembelian']) + 
                       floor($calculation['total_bayar'] / 10000);
         
@@ -286,7 +360,7 @@ class PembelianController {
         
         $items = [];
         foreach ($transaksi['details'] as $detail) {
-            $produk = $this->model->getProdukById($detail['produk_id']);
+            $produk = $this->model->getProdukById($detail['produk_id'], $transaksi['store_id']);
             if ($produk) {
                 $items[] = [
                     'produk_id' => $detail['produk_id'],
@@ -301,6 +375,16 @@ class PembelianController {
         
         header('Content-Type: application/json');
         echo json_encode(['success' => true, 'items' => $items]);
+    }
+    
+    public function getProdukByStore() {
+        $this->authModel->requireMemberRole();
+        
+        $storeId = $_GET['store_id'] ?? 1;
+        $produkByCategory = $this->model->getProdukByCategory($storeId);
+        
+        header('Content-Type: application/json');
+        echo json_encode($produkByCategory);
     }
 }
 ?>

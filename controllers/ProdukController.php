@@ -9,20 +9,30 @@ class ProdukController {
     }
     
     public function index() {
-        $this->authModel->requireRole(['admin']);
+        $this->authModel->requireRole(['admin', 'manajer']);
+        
+        $user = $this->authModel->getLoggedInUser();
+        $userRole = $user['role'];
+        $storeId = ($userRole == 'manajer') ? ($user['store_id'] ?? null) : null;
         
         $search = $_GET['search'] ?? '';
-        $produk = !empty($search) ? $this->produkModel->searchProduk($search) : $this->produkModel->getAllProduk();
+        $produk = !empty($search) ? $this->produkModel->searchProduk($search, $storeId) : $this->produkModel->getAllProduk($storeId);
         
         loadView('produk/index', [
             'produk' => $produk,
             'search' => $search,
-            'title' => 'Kelola Produk'
+            'title' => 'Kelola Produk',
+            'user_role' => $userRole,
+            'store_info' => $this->getStoreInfo($user)
         ]);
     }
     
     public function add() {
-        $this->authModel->requireRole(['admin']);
+        $this->authModel->requireRole(['admin', 'manajer']);
+        
+        $user = $this->authModel->getLoggedInUser();
+        $userRole = $user['role'];
+        $userStoreId = ($userRole == 'manajer') ? ($user['store_id'] ?? null) : null;
         
         $error = '';
         $success = '';
@@ -48,6 +58,10 @@ class ProdukController {
             
             $store_ids = $_POST['store_ids'] ?? [];
             
+            if ($userRole == 'manajer' && $userStoreId) {
+                $store_ids = [$userStoreId];
+            }
+            
             if (empty($error)) {
                 $errors = $this->produkModel->validateProduk($data);
                 
@@ -70,7 +84,7 @@ class ProdukController {
             }
         }
         
-        $stores = $this->produkModel->getAllStores();
+        $stores = $this->produkModel->getAllStores($userStoreId);
         
         loadView('produk/form', [
             'error' => $error,
@@ -78,18 +92,30 @@ class ProdukController {
             'title' => 'Tambah Produk',
             'action' => 'add',
             'produk' => null,
-            'stores' => $stores
+            'stores' => $stores,
+            'user_role' => $userRole,
+            'user_store_id' => $userStoreId,
+            'store_info' => $this->getStoreInfo($user)
         ]);
     }
     
     public function edit() {
-        $this->authModel->requireRole(['admin']);
+        $this->authModel->requireRole(['admin', 'manajer']);
+        
+        $user = $this->authModel->getLoggedInUser();
+        $userRole = $user['role'];
+        $userStoreId = ($userRole == 'manajer') ? ($user['store_id'] ?? null) : null;
         
         $id = $_GET['id'] ?? 0;
         $produk = $this->produkModel->getProdukById($id);
         
         if (!$produk) {
             $this->redirect('index.php?controller=produk&error=Produk tidak ditemukan');
+            return;
+        }
+        
+        if (!$this->produkModel->checkProdukAccess($id, $userRole, $userStoreId)) {
+            $this->redirect('index.php?controller=produk&error=Anda tidak memiliki akses untuk mengedit produk ini');
             return;
         }
         
@@ -121,6 +147,10 @@ class ProdukController {
             
             $store_ids = $_POST['store_ids'] ?? [];
             
+            if ($userRole == 'manajer' && $userStoreId) {
+                $store_ids = [$userStoreId];
+            }
+            
             if (empty($error)) {
                 $errors = $this->produkModel->validateProduk($data);
                 
@@ -143,7 +173,7 @@ class ProdukController {
             }
         }
         
-        $stores = $this->produkModel->getAllStores();
+        $stores = $this->produkModel->getAllStores($userStoreId);
         $produkStores = $this->produkModel->getProdukStores($id);
         
         loadView('produk/form', [
@@ -153,16 +183,33 @@ class ProdukController {
             'action' => 'edit',
             'produk' => $produk,
             'stores' => $stores,
-            'produk_stores' => $produkStores
+            'produk_stores' => $produkStores,
+            'user_role' => $userRole,
+            'user_store_id' => $userStoreId,
+            'store_info' => $this->getStoreInfo($user)
         ]);
     }
     
     public function delete() {
-        $this->authModel->requireRole(['admin']);
+        $this->authModel->requireRole(['admin', 'manajer']);
+        
+        $user = $this->authModel->getLoggedInUser();
+        $userRole = $user['role'];
+        $userStoreId = ($userRole == 'manajer') ? ($user['store_id'] ?? null) : null;
         
         $id = $_GET['id'] ?? 0;
-        
         $produk = $this->produkModel->getProdukById($id);
+        
+        if (!$produk) {
+            $this->redirect('index.php?controller=produk&error=Produk tidak ditemukan');
+            return;
+        }
+        
+        if (!$this->produkModel->checkProdukAccess($id, $userRole, $userStoreId)) {
+            $this->redirect('index.php?controller=produk&error=Anda tidak memiliki akses untuk menghapus produk ini');
+            return;
+        }
+        
         if ($produk && !empty($produk['foto_produk']) && file_exists('foto_produk/' . $produk['foto_produk'])) {
             unlink('foto_produk/' . $produk['foto_produk']);
         }
@@ -177,7 +224,11 @@ class ProdukController {
     }
     
     public function view() {
-        $this->authModel->requireRole(['admin']);
+        $this->authModel->requireRole(['admin', 'manajer']);
+        
+        $user = $this->authModel->getLoggedInUser();
+        $userRole = $user['role'];
+        $userStoreId = ($userRole == 'manajer') ? ($user['store_id'] ?? null) : null;
         
         $id = $_GET['id'] ?? 0;
         $produk = $this->produkModel->getProdukById($id);
@@ -187,13 +238,55 @@ class ProdukController {
             return;
         }
         
+        if (!$this->produkModel->checkProdukAccess($id, $userRole, $userStoreId)) {
+            $this->redirect('index.php?controller=produk&error=Anda tidak memiliki akses untuk melihat produk ini');
+            return;
+        }
+        
         $produkStores = $this->produkModel->getProdukStores($id);
+        $storesByProduk = $this->produkModel->getStoresByProduk($id);
         
         loadView('produk/view', [
             'produk' => $produk,
             'produk_stores' => $produkStores,
-            'title' => 'Detail Produk'
+            'stores_by_produk' => $storesByProduk,
+            'title' => 'Detail Produk',
+            'user_role' => $userRole,
+            'store_info' => $this->getStoreInfo($user)
         ]);
+    }
+    
+    public function stats() {
+        $this->authModel->requireRole(['admin', 'manajer']);
+        
+        $user = $this->authModel->getLoggedInUser();
+        $userRole = $user['role'];
+        $storeId = ($userRole == 'manajer') ? ($user['store_id'] ?? null) : null;
+        
+        $stats = $this->produkModel->getStatsByStore($storeId);
+        $stokRendah = $this->produkModel->getStokRendah(20, $storeId);
+        $kategoriList = $this->produkModel->getKategoriList($storeId);
+        
+        loadView('produk/stats', [
+            'stats' => $stats,
+            'stok_rendah' => $stokRendah,
+            'kategori_list' => $kategoriList,
+            'title' => 'Statistik Produk',
+            'user_role' => $userRole,
+            'store_info' => $this->getStoreInfo($user)
+        ]);
+    }
+    
+    private function getStoreInfo($user) {
+        if ($user['role'] == 'manajer' && isset($user['store_id'])) {
+            return [
+                'store_id' => $user['store_id'],
+                'nama_store' => $user['nama_store'] ?? 'Store Tidak Diketahui',
+                'alamat_store' => $user['alamat_store'] ?? '',
+                'manajer_store' => $user['manajer_store'] ?? $user['nama_lengkap']
+            ];
+        }
+        return null;
     }
     
     private function handleFileUpload($file) {

@@ -19,9 +19,6 @@
                   <a href="index.php?controller=pembelian&action=history" class="btn btn-outline-secondary">
                     <i class="fas fa-arrow-left"></i> Kembali
                   </a>
-                  <button type="button" class="btn btn-primary" onclick="printReceipt()">
-                    <i class="fas fa-print"></i> Cetak
-                  </button>
                 </div>
               </div>
             </div>
@@ -52,6 +49,14 @@
                         <span class="info-value"><?= date('d M Y, H:i:s', strtotime($transaksi['tanggal_transaksi'])) ?></span>
                       </div>
                       <div class="info-item">
+                        <span class="info-label">Store:</span>
+                        <span class="info-value store-name"><?= htmlspecialchars($transaksi['nama_store']) ?></span>
+                      </div>
+                      <div class="info-item">
+                        <span class="info-label">Alamat Store:</span>
+                        <span class="info-value"><?= htmlspecialchars($transaksi['alamat_store']) ?></span>
+                      </div>
+                      <div class="info-item">
                         <span class="info-label">Metode Pembayaran:</span>
                         <span class="info-value payment-method"><?= ucfirst($transaksi['metode_pembayaran']) ?></span>
                       </div>
@@ -68,6 +73,32 @@
                     </div>
                   </div>
 
+                  <?php if ($transaksi['metode_pembayaran'] === 'transfer' && !empty($transaksi['bukti_pembayaran'])): ?>
+                  <div class="payment-proof-section">
+                    <h5>Bukti Pembayaran</h5>
+                    <div class="payment-proof-container">
+                      <div class="proof-image-container">
+                        <img src="bukti_pembayaran/<?= htmlspecialchars($transaksi['bukti_pembayaran']) ?>" 
+                             alt="Bukti Pembayaran" 
+                             class="proof-image"
+                             onclick="showImageModal(this.src)">
+                        <div class="proof-overlay">
+                          <i class="fas fa-search-plus"></i>
+                          <span>Klik untuk memperbesar</span>
+                        </div>
+                      </div>
+                      <div class="proof-info">
+                        <p><strong>File:</strong> <?= htmlspecialchars($transaksi['bukti_pembayaran']) ?></p>
+                        <p><strong>Status:</strong> <span class="status-verified">Terverifikasi</span></p>
+                        <a href="bukti_pembayaran/<?= htmlspecialchars($transaksi['bukti_pembayaran']) ?>" 
+                           target="_blank" class="btn btn-sm btn-outline-primary">
+                          <i class="fas fa-external-link-alt"></i> Buka di Tab Baru
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                  <?php endif; ?>
+
                   <div class="products-section">
                     <h5>Produk yang Dibeli</h5>
                     <div class="products-table-responsive">
@@ -76,6 +107,7 @@
                           <tr>
                             <th>Produk</th>
                             <th>Kategori</th>
+                            <th>Foto</th>
                             <th>Harga</th>
                             <th>Qty</th>
                             <th>Subtotal</th>
@@ -92,6 +124,19 @@
                             </td>
                             <td>
                               <span class="category-badge"><?= htmlspecialchars($detail['kategori']) ?></span>
+                            </td>
+                            <td>
+                              <div class="product-image-small">
+                                <?php if (!empty($detail['foto_produk'])): ?>
+                                  <img src="foto_produk/<?= htmlspecialchars($detail['foto_produk']) ?>" 
+                                       alt="<?= htmlspecialchars($detail['nama_produk']) ?>"
+                                       onclick="showImageModal(this.src)">
+                                <?php else: ?>
+                                  <div class="no-image">
+                                    <i class="fas fa-image"></i>
+                                  </div>
+                                <?php endif; ?>
+                              </div>
                             </td>
                             <td>
                               <span class="price">Rp <?= number_format($detail['harga_satuan']) ?></span>
@@ -193,6 +238,10 @@
                     <i class="fas fa-download"></i>
                     <span>Download PDF</span>
                   </button>
+                  <button type="button" class="action-btn warning" onclick="reorderTransaction()">
+                    <i class="fas fa-redo"></i>
+                    <span>Beli Lagi</span>
+                  </button>
                 </div>
               </div>
 
@@ -233,7 +282,7 @@
                       <i class="fas fa-percentage"></i>
                     </div>
                     <div class="stat-content">
-                      <h6><?= number_format(($transaksi['diskon_membership'] / $transaksi['total_sebelum_diskon']) * 100, 1) ?>%</h6>
+                      <h6><?= $transaksi['total_sebelum_diskon'] > 0 ? number_format(($transaksi['diskon_membership'] / $transaksi['total_sebelum_diskon']) * 100, 1) : 0 ?>%</h6>
                       <span>Diskon</span>
                     </div>
                   </div>
@@ -241,6 +290,26 @@
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="imageModal" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Preview Gambar</h5>
+          <button type="button" class="close" data-dismiss="modal">
+            <span>&times;</span>
+          </button>
+        </div>
+        <div class="modal-body text-center">
+          <img id="modalImage" src="" alt="Preview" class="img-fluid">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+          <a id="downloadImage" href="" download class="btn btn-primary">Download</a>
         </div>
       </div>
     </div>
@@ -343,15 +412,15 @@
       padding: 1.5rem;
     }
 
-    .info-section, .products-section, .summary-section {
+    .info-section, .payment-proof-section, .products-section, .summary-section {
       margin-bottom: 2rem;
     }
 
-    .info-section:last-child, .products-section:last-child, .summary-section:last-child {
+    .info-section:last-child, .payment-proof-section:last-child, .products-section:last-child, .summary-section:last-child {
       margin-bottom: 0;
     }
 
-    .info-section h5, .products-section h5, .summary-section h5 {
+    .info-section h5, .payment-proof-section h5, .products-section h5, .summary-section h5 {
       color: var(--text-primary);
       font-weight: 600;
       margin-bottom: 1rem;
@@ -384,6 +453,14 @@
       color: var(--text-primary);
     }
 
+    .store-name {
+      background: var(--info-color);
+      color: white;
+      padding: 0.2rem 0.6rem;
+      border-radius: 12px;
+      font-size: 0.8rem;
+    }
+
     .payment-method {
       background: var(--info-color);
       color: white;
@@ -404,6 +481,63 @@
     .membership-badge.silver { background: #95a5a6; }
     .membership-badge.gold { background: #f39c12; }
     .membership-badge.platinum { background: #9b59b6; }
+
+    .payment-proof-container {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: 1.5rem;
+      align-items: start;
+    }
+
+    .proof-image-container {
+      position: relative;
+      border-radius: 8px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.3s ease;
+    }
+
+    .proof-image-container:hover {
+      transform: scale(1.05);
+    }
+
+    .proof-image {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      border-radius: 8px;
+    }
+
+    .proof-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.7);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .proof-image-container:hover .proof-overlay {
+      opacity: 1;
+    }
+
+    .proof-info {
+      padding: 1rem;
+      background: var(--light-color);
+      border-radius: 8px;
+    }
+
+    .status-verified {
+      color: var(--success-color);
+      font-weight: 600;
+    }
 
     .products-table-responsive {
       overflow-x: auto;
@@ -432,6 +566,36 @@
       font-weight: 600;
       color: var(--text-primary);
       margin: 0;
+    }
+
+    .product-image-small {
+      width: 50px;
+      height: 50px;
+      border-radius: 8px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.3s ease;
+    }
+
+    .product-image-small:hover {
+      transform: scale(1.1);
+    }
+
+    .product-image-small img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .no-image {
+      width: 100%;
+      height: 100%;
+      background: var(--light-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary);
+      font-size: 1.2rem;
     }
 
     .category-badge {
@@ -567,6 +731,11 @@
       color: white;
     }
 
+    .action-btn.warning {
+      background: var(--warning-color);
+      color: white;
+    }
+
     .stat-item {
       display: flex;
       align-items: center;
@@ -625,6 +794,10 @@
         grid-template-columns: 1fr;
       }
 
+      .payment-proof-container {
+        grid-template-columns: 1fr;
+      }
+
       .products-table {
         font-size: 0.9rem;
       }
@@ -673,6 +846,16 @@
   </style>
 
   <script>
+    function showImageModal(imageSrc) {
+      const modal = $('#imageModal');
+      const modalImage = $('#modalImage');
+      const downloadLink = $('#downloadImage');
+      
+      modalImage.attr('src', imageSrc);
+      downloadLink.attr('href', imageSrc);
+      modal.modal('show');
+    }
+
     function printReceipt() {
       const printContent = document.querySelector('.transaction-detail-card').innerHTML;
       const printWindow = window.open('', '_blank');
@@ -692,12 +875,17 @@
               .summary-section { border-top: 2px solid #000; padding-top: 15px; margin-top: 20px; }
               .summary-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
               .summary-row.total { font-weight: bold; font-size: 1.2em; border-top: 1px solid #000; padding-top: 10px; }
-              @media print { body { margin: 0; } }
+              .payment-proof-section { display: none; }
+              .product-image-small { display: none; }
+              @media print { body { margin: 0; } .payment-proof-section { display: none !important; } }
             </style>
           </head>
           <body>
             <h1>Station Tahu Sumedang</h1>
             <h2>Detail Transaksi</h2>
+            <p><strong>Store:</strong> <?= htmlspecialchars($transaksi['nama_store']) ?></p>
+            <p><strong>Alamat:</strong> <?= htmlspecialchars($transaksi['alamat_store']) ?></p>
+            <hr>
             ${printContent}
             <script>window.print(); window.close();<\/script>
           </body>
@@ -709,12 +897,20 @@
       if (navigator.share) {
         navigator.share({
           title: 'Transaksi #<?= $transaksi['transaksi_id'] ?>',
-          text: 'Detail transaksi pembelian di Station Tahu Sumedang',
+          text: 'Detail transaksi pembelian di Station Tahu Sumedang - Store: <?= htmlspecialchars($transaksi['nama_store']) ?>',
           url: window.location.href
         });
       } else {
         const url = window.location.href;
         navigator.clipboard.writeText(url).then(() => {
+          alert('Link transaksi telah disalin ke clipboard');
+        }).catch(() => {
+          const textArea = document.createElement('textarea');
+          textArea.value = url;
+          document.body.appendChild(textArea);
+          textArea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textArea);
           alert('Link transaksi telah disalin ke clipboard');
         });
       }
@@ -722,6 +918,32 @@
 
     function downloadPDF() {
       alert('Fitur download PDF sedang dalam pengembangan');
+    }
+
+    function reorderTransaction() {
+      if (confirm('Tambahkan semua produk dari transaksi ini ke keranjang belanja?')) {
+        const transactionId = <?= $transaksi['transaksi_id'] ?>;
+        
+        fetch(`index.php?controller=pembelian&action=getTransactionItems&id=${transactionId}`)
+          .then(response => response.json())
+          .then(data => {
+            if (data.success) {
+              localStorage.setItem('reorderData', JSON.stringify({
+                storeId: <?= $transaksi['store_id'] ?>,
+                storeName: '<?= htmlspecialchars($transaksi['nama_store']) ?>',
+                items: data.items
+              }));
+              
+              window.location.href = 'index.php?controller=pembelian&reorder=1';
+            } else {
+              alert('Gagal memuat data transaksi: ' + data.message);
+            }
+          })
+          .catch(error => {
+            console.error('Error:', error);
+            alert('Terjadi kesalahan saat memproses permintaan');
+          });
+      }
     }
 
     document.addEventListener('DOMContentLoaded', function() {
@@ -736,9 +958,71 @@
           item.style.transform = 'translateY(0)';
         }, index * 100);
       });
+
+      const proofImages = document.querySelectorAll('.proof-image, .product-image-small img');
+      proofImages.forEach(img => {
+        img.addEventListener('error', function() {
+          this.style.display = 'none';
+          const parent = this.parentElement;
+          parent.innerHTML = '<div class="no-image"><i class="fas fa-image"></i></div>';
+        });
+      });
+
+      const actionButtons = document.querySelectorAll('.action-btn');
+      actionButtons.forEach((btn, index) => {
+        btn.style.opacity = '0';
+        btn.style.transform = 'translateX(-20px)';
+        
+        setTimeout(() => {
+          btn.style.transition = 'all 0.3s ease';
+          btn.style.opacity = '1';
+          btn.style.transform = 'translateX(0)';
+        }, index * 100 + 300);
+      });
+
+      if (window.location.search.includes('success=')) {
+        const successMessage = new URLSearchParams(window.location.search).get('success');
+        if (successMessage) {
+          const alert = document.createElement('div');
+          alert.className = 'alert alert-success alert-dismissible fade show';
+          alert.style.position = 'fixed';
+          alert.style.top = '20px';
+          alert.style.right = '20px';
+          alert.style.zIndex = '9999';
+          alert.style.maxWidth = '400px';
+          alert.innerHTML = `
+            ${successMessage}
+            <button type="button" class="close" onclick="this.parentElement.remove()">
+              <span>&times;</span>
+            </button>
+          `;
+          document.body.appendChild(alert);
+          
+          setTimeout(() => {
+            if (alert.parentElement) {
+              alert.remove();
+            }
+          }, 5000);
+        }
+      }
+    });
+
+    $(document).ready(function() {
+      $('#imageModal').on('shown.bs.modal', function() {
+        const modalImage = $('#modalImage');
+        modalImage.css({
+          'max-width': '100%',
+          'max-height': '70vh',
+          'object-fit': 'contain'
+        });
+      });
+
+      $('.proof-image, .product-image-small img').on('click', function() {
+        showImageModal(this.src);
+      });
+
+      $('[data-toggle="tooltip"]').tooltip();
     });
   </script>
 
   <?php include 'template/script.php'; ?>
-</body>
-</html>

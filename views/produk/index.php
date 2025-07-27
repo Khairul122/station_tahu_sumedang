@@ -13,7 +13,12 @@
               <div class="d-flex justify-content-between align-items-center flex-wrap">
                 <div>
                   <h3 class="font-weight-bold mb-1">Kelola Produk</h3>
-                  <p class="text-muted mb-0">Manajemen produk tahu sumedang semua store</p>
+                  <p class="text-muted mb-0">
+                    <?= ($user_role ?? 'admin') == 'manajer' 
+                        ? 'Manajemen produk untuk store Anda' 
+                        : 'Manajemen produk tahu sumedang semua store' 
+                    ?>
+                  </p>
                 </div>
                 <a href="index.php?controller=produk&action=add" class="btn btn-primary">
                   <i class="mdi mdi-plus"></i> Tambah Produk
@@ -46,6 +51,12 @@
                     <h4 class="card-title">
                       <i class="mdi mdi-package-variant text-primary me-2"></i>
                       Daftar Produk
+                      <?php if (($user_role ?? 'admin') == 'manajer'): ?>
+                        <span class="store-badge ms-2">
+                          <i class="mdi mdi-store"></i> 
+                          Store Saya
+                        </span>
+                      <?php endif; ?>
                     </h4>
                     <div class="product-stats">
                       <span class="stat-item">
@@ -63,7 +74,7 @@
                           <div class="search-wrapper">
                             <i class="mdi mdi-magnify search-icon"></i>
                             <input type="text" class="form-control search-input" name="search" 
-                                   placeholder="Cari nama produk, kategori, atau store..." 
+                                   placeholder="Cari nama produk, kategori<?= ($user_role ?? 'admin') == 'admin' ? ', atau store' : '' ?>..." 
                                    value="<?= htmlspecialchars($search) ?>">
                             <button class="btn btn-primary search-btn" type="submit">
                               Cari
@@ -88,7 +99,9 @@
                           <th>No</th>
                           <th>Foto</th>
                           <th>Produk</th>
+                          <?php if (($user_role ?? 'admin') == 'admin'): ?>
                           <th>Store</th>
+                          <?php endif; ?>
                           <th>Kategori</th>
                           <th>Harga</th>
                           <th>Stok</th>
@@ -122,12 +135,14 @@
                                 <small class="product-id">ID: #<?= $item['produk_id'] ?></small>
                               </div>
                             </td>
+                            <?php if (($user_role ?? 'admin') == 'admin'): ?>
                             <td>
                               <span class="store-badge">
                                 <i class="mdi mdi-store"></i>
                                 <?= htmlspecialchars($item['nama_store'] ?? 'Store #' . $item['store_id']) ?>
                               </span>
                             </td>
+                            <?php endif; ?>
                             <td>
                               <span class="category-badge category-<?= strtolower($item['kategori']) ?>">
                                 <?= htmlspecialchars($item['kategori']) ?>
@@ -160,7 +175,10 @@
                             </td>
                             <td>
                               <div class="action-buttons">
-                        
+                                <a href="index.php?controller=produk&action=view&id=<?= $item['produk_id'] ?>" 
+                                   class="btn btn-sm btn-info" title="Detail">
+                                  <i class="mdi mdi-eye"></i>
+                                </a>
                                 <a href="index.php?controller=produk&action=edit&id=<?= $item['produk_id'] ?>" 
                                    class="btn btn-sm btn-warning" title="Edit">
                                   <i class="mdi mdi-pencil"></i>
@@ -176,7 +194,7 @@
                           <?php endforeach; ?>
                         <?php else: ?>
                           <tr>
-                            <td colspan="9" class="text-center">
+                            <td colspan="<?= ($user_role ?? 'admin') == 'admin' ? '9' : '8' ?>" class="text-center">
                               <div class="empty-state">
                                 <div class="empty-icon">
                                   <i class="mdi mdi-package-variant-closed"></i>
@@ -185,13 +203,23 @@
                                   <?= !empty($search) ? 'Produk Tidak Ditemukan' : 'Belum Ada Produk' ?>
                                 </h5>
                                 <p class="empty-message">
-                                  <?= !empty($search) 
-                                      ? 'Tidak ada produk yang cocok dengan pencarian "' . htmlspecialchars($search) . '"' 
-                                      : 'Mulai dengan menambahkan produk pertama ke store Anda' ?>
+                                  <?php if (!empty($search)): ?>
+                                    Tidak ada produk yang cocok dengan pencarian "<?= htmlspecialchars($search) ?>"
+                                    <?= ($user_role ?? 'admin') == 'manajer' ? ' di store Anda' : '' ?>
+                                  <?php else: ?>
+                                    <?= ($user_role ?? 'admin') == 'manajer' 
+                                        ? 'Mulai dengan menambahkan produk pertama ke store Anda' 
+                                        : 'Mulai dengan menambahkan produk pertama ke store' 
+                                    ?>
+                                  <?php endif; ?>
                                 </p>
                                 <?php if (empty($search)): ?>
                                   <a href="index.php?controller=produk&action=add" class="btn btn-primary">
-                                    <i class="mdi mdi-plus"></i> Tambah Produk Pertama
+                                    <i class="mdi mdi-plus"></i> 
+                                    <?= ($user_role ?? 'admin') == 'manajer' 
+                                        ? 'Tambah Produk untuk Store Saya' 
+                                        : 'Tambah Produk Pertama' 
+                                    ?>
                                   </a>
                                 <?php else: ?>
                                   <a href="index.php?controller=produk" class="btn btn-outline-primary">
@@ -213,6 +241,7 @@
                         <small class="text-muted">
                           Menampilkan <?= count($produk) ?> produk
                           <?= !empty($search) ? 'dari pencarian "' . htmlspecialchars($search) . '"' : '' ?>
+                          <?= ($user_role ?? 'admin') == 'manajer' ? ' di store Anda' : '' ?>
                         </small>
                       </div>
                       <div class="col-md-6 text-end">
@@ -247,6 +276,59 @@
               </div>
             </div>
           </div>
+
+          <?php if (($user_role ?? 'admin') == 'manajer' && !empty($produk)): ?>
+          <div class="row">
+            <div class="col-12">
+              <div class="card manager-summary">
+                <div class="card-body">
+                  <h4 class="card-title">
+                    <i class="mdi mdi-chart-line text-success me-2"></i>
+                    Ringkasan Store Anda
+                  </h4>
+                  <div class="summary-grid">
+                    <div class="summary-item">
+                      <div class="summary-icon bg-primary">
+                        <i class="mdi mdi-package-variant"></i>
+                      </div>
+                      <div class="summary-content">
+                        <h5><?= count($produk) ?></h5>
+                        <p>Total Produk</p>
+                      </div>
+                    </div>
+                    <div class="summary-item">
+                      <div class="summary-icon bg-success">
+                        <i class="mdi mdi-cube-outline"></i>
+                      </div>
+                      <div class="summary-content">
+                        <h5><?= number_format($totalStok) ?></h5>
+                        <p>Total Stok</p>
+                      </div>
+                    </div>
+                    <div class="summary-item">
+                      <div class="summary-icon bg-warning">
+                        <i class="mdi mdi-alert"></i>
+                      </div>
+                      <div class="summary-content">
+                        <h5><?= $stokRendah ?></h5>
+                        <p>Stok Rendah</p>
+                      </div>
+                    </div>
+                    <div class="summary-item">
+                      <div class="summary-icon bg-danger">
+                        <i class="mdi mdi-alert-circle"></i>
+                      </div>
+                      <div class="summary-content">
+                        <h5><?= $stokHabis ?></h5>
+                        <p>Stok Habis</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <?php endif; ?>
         </div>
       </div>
     </div>
@@ -268,7 +350,7 @@
   </div>
   
   <style>
-    .dynamic-card {
+    .dynamic-card, .manager-summary {
       border-radius: 15px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.1);
       border: none;
@@ -287,6 +369,16 @@
       border-radius: 20px;
       font-size: 0.9em;
       font-weight: 500;
+    }
+    
+    .store-badge {
+      background: linear-gradient(45deg, #f8f9fa, #e9ecef);
+      color: #495057;
+      padding: 6px 12px;
+      border-radius: 15px;
+      font-size: 0.85em;
+      font-weight: 500;
+      border: 1px solid #dee2e6;
     }
     
     .search-section {
@@ -393,16 +485,6 @@
     .product-id {
       color: #6c757d;
       font-size: 0.8em;
-    }
-    
-    .store-badge {
-      background: linear-gradient(45deg, #f8f9fa, #e9ecef);
-      color: #495057;
-      padding: 6px 12px;
-      border-radius: 15px;
-      font-size: 0.85em;
-      font-weight: 500;
-      border: 1px solid #dee2e6;
     }
     
     .category-badge {
@@ -514,6 +596,47 @@
       font-weight: 500;
     }
     
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+    
+    .summary-grid .summary-item {
+      display: flex;
+      align-items: center;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    
+    .summary-icon {
+      width: 50px;
+      height: 50px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1.5rem;
+      margin-right: 15px;
+    }
+    
+    .summary-content h5 {
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #2c3e50;
+    }
+    
+    .summary-content p {
+      margin: 0;
+      font-size: 0.9rem;
+      color: #6c757d;
+    }
+    
     .alert {
       border-radius: 10px;
       border: none;
@@ -556,6 +679,16 @@
       .product-thumb, .no-image {
         width: 45px;
         height: 45px;
+      }
+      
+      .summary-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    
+    @media (max-width: 576px) {
+      .summary-grid {
+        grid-template-columns: 1fr;
       }
     }
   </style>

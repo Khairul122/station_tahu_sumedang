@@ -13,7 +13,14 @@
               <div class="d-flex justify-content-between align-items-center flex-wrap">
                 <div>
                   <h3 class="font-weight-bold mb-1"><?= $title ?></h3>
-                  <p class="text-muted mb-0"><?= $action == 'add' ? 'Tambah produk baru ke store' : 'Edit informasi produk' ?></p>
+                  <p class="text-muted mb-0">
+                    <?= $action == 'add' ? 'Tambah produk baru' : 'Edit informasi produk' ?>
+                    <?php if (($user_role ?? '') == 'manajer'): ?>
+                      untuk store Anda
+                    <?php else: ?>
+                      ke store
+                    <?php endif; ?>
+                  </p>
                 </div>
                 <a href="index.php?controller=produk" class="btn btn-secondary">
                   <i class="mdi mdi-arrow-left"></i> Kembali
@@ -133,12 +140,13 @@
                       <?php endif; ?>
                     </div>
                     
-                    <div class="store-selection mb-4">
+                    <div class="store-selection mb-4" <?= ($user_role ?? '') == 'manajer' ? 'style="display: none;"' : '' ?>>
                       <label class="form-label fw-bold">
                         <i class="mdi mdi-store me-2"></i>Pilih Store <span class="text-danger">*</span>
                       </label>
                       
                       <div class="store-card">
+                        <?php if (($user_role ?? '') == 'admin'): ?>
                         <div class="store-header">
                           <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="select_all_stores">
@@ -147,6 +155,7 @@
                             </label>
                           </div>
                         </div>
+                        <?php endif; ?>
                         
                         <div class="store-grid">
                           <?php if (!empty($stores)): ?>
@@ -158,14 +167,21 @@
                                        <?php 
                                        if ($action == 'edit') {
                                            echo (isset($produk_stores) && in_array($store['id_store'], $produk_stores)) ? 'checked' : '';
-                                       } elseif ($action == 'add' && $store['id_store'] == 1) {
-                                           echo 'checked';
+                                       } elseif ($action == 'add') {
+                                           if (($user_role ?? '') == 'manajer') {
+                                               echo 'checked style="display: none;"';
+                                           } else {
+                                               echo ($store['id_store'] == 1) ? 'checked' : '';
+                                           }
                                        }
                                        ?>>
                                 <label class="store-label" for="store_<?= $store['id_store'] ?>">
                                   <div class="store-info">
                                     <h6><?= htmlspecialchars($store['nama_store']) ?></h6>
                                     <p><?= htmlspecialchars($store['alamat_store']) ?></p>
+                                    <?php if (($user_role ?? '') == 'manajer'): ?>
+                                      <small class="text-primary"><i class="mdi mdi-account-circle me-1"></i>Store Anda</small>
+                                    <?php endif; ?>
                                   </div>
                                   <div class="store-icon">
                                     <i class="mdi mdi-store"></i>
@@ -182,6 +198,18 @@
                         </div>
                       </div>
                     </div>
+
+                    <?php if (($user_role ?? '') == 'manajer'): ?>
+                    <div class="manager-store-info mb-4">
+                      <div class="alert alert-info">
+                        <i class="mdi mdi-information me-2"></i>
+                        Produk akan ditambahkan ke store yang Anda kelola
+                        <?php if (!empty($stores) && count($stores) > 0): ?>
+                          <strong>(<?= htmlspecialchars($stores[0]['nama_store']) ?>)</strong>
+                        <?php endif; ?>
+                      </div>
+                    </div>
+                    <?php endif; ?>
                     
                     <div class="form-check mb-4">
                       <input class="form-check-input" type="checkbox" id="confirm" required>
@@ -248,8 +276,13 @@
                       <i class="mdi mdi-store"></i>
                     </div>
                     <div class="tip-content">
-                      <h6>Multi Store</h6>
-                      <p>Pilih store yang strategis untuk penjualan optimal</p>
+                      <h6><?= ($user_role ?? '') == 'manajer' ? 'Store Management' : 'Multi Store' ?></h6>
+                      <p>
+                        <?= ($user_role ?? '') == 'manajer' 
+                            ? 'Kelola produk untuk store Anda dengan optimal' 
+                            : 'Pilih store yang strategis untuk penjualan optimal' 
+                        ?>
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -271,6 +304,33 @@
                   </div>
                 </div>
               </div>
+
+              <?php if (($user_role ?? '') == 'manajer'): ?>
+              <div class="card manager-info mt-3">
+                <div class="card-body">
+                  <h5 class="card-title">
+                    <i class="mdi mdi-account-star text-success me-2"></i>
+                    Info Manajer
+                  </h5>
+                  <div class="manager-content">
+                    <div class="info-item">
+                      <i class="mdi mdi-account-circle"></i>
+                      <span>Role: Manager Store</span>
+                    </div>
+                    <?php if (!empty($stores) && count($stores) > 0): ?>
+                    <div class="info-item">
+                      <i class="mdi mdi-store"></i>
+                      <span>Store: <?= htmlspecialchars($stores[0]['nama_store']) ?></span>
+                    </div>
+                    <div class="info-item">
+                      <i class="mdi mdi-map-marker"></i>
+                      <span><?= htmlspecialchars($stores[0]['alamat_store']) ?></span>
+                    </div>
+                    <?php endif; ?>
+                  </div>
+                </div>
+              </div>
+              <?php endif; ?>
             </div>
           </div>
         </div>
@@ -286,7 +346,7 @@
       overflow: hidden;
     }
     
-    .tips-card {
+    .tips-card, .manager-info {
       border-radius: 15px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.1);
       border: none;
@@ -414,9 +474,13 @@
     }
     
     .store-info p {
-      margin: 0;
+      margin: 0 0 5px 0;
       color: #6c757d;
       font-size: 0.85em;
+    }
+    
+    .store-info small {
+      font-weight: 500;
     }
     
     .store-icon {
@@ -429,6 +493,12 @@
       justify-content: center;
       color: white;
       font-size: 18px;
+    }
+    
+    .manager-store-info .alert {
+      border-radius: 10px;
+      background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+      border: 1px solid #007bff;
     }
     
     .tip-item {
@@ -483,6 +553,22 @@
     .point-label {
       font-size: 0.9em;
       opacity: 0.9;
+    }
+    
+    .manager-content {
+      space-y: 10px;
+    }
+    
+    .info-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+      color: #495057;
+    }
+    
+    .info-item i {
+      margin-right: 10px;
+      color: #28a745;
     }
     
     .action-buttons {
@@ -584,19 +670,21 @@
       const stokInfo = document.getElementById('stok-info');
       
       function updateSelectAllState() {
-        const checkedStores = Array.from(storeCheckboxes).filter(cb => cb.checked);
-        const allChecked = checkedStores.length === storeCheckboxes.length;
-        const noneChecked = checkedStores.length === 0;
-        
-        if (allChecked) {
-          selectAllCheckbox.checked = true;
-          selectAllCheckbox.indeterminate = false;
-        } else if (noneChecked) {
-          selectAllCheckbox.checked = false;
-          selectAllCheckbox.indeterminate = false;
-        } else {
-          selectAllCheckbox.checked = false;
-          selectAllCheckbox.indeterminate = true;
+        if (selectAllCheckbox) {
+          const checkedStores = Array.from(storeCheckboxes).filter(cb => cb.checked);
+          const allChecked = checkedStores.length === storeCheckboxes.length;
+          const noneChecked = checkedStores.length === 0;
+          
+          if (allChecked) {
+            selectAllCheckbox.checked = true;
+            selectAllCheckbox.indeterminate = false;
+          } else if (noneChecked) {
+            selectAllCheckbox.checked = false;
+            selectAllCheckbox.indeterminate = false;
+          } else {
+            selectAllCheckbox.checked = false;
+            selectAllCheckbox.indeterminate = true;
+          }
         }
       }
       
@@ -638,11 +726,13 @@
       updatePointSuggestion();
       updateStokInfo();
       
-      selectAllCheckbox.addEventListener('change', function() {
-        storeCheckboxes.forEach(checkbox => {
-          checkbox.checked = this.checked;
+      if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+          storeCheckboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+          });
         });
-      });
+      }
       
       storeCheckboxes.forEach(checkbox => {
         checkbox.addEventListener('change', updateSelectAllState);

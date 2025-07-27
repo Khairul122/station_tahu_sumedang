@@ -36,6 +36,24 @@
           <?php endif; ?>
 
           <div class="row mb-4">
+            <div class="col-12 mb-3">
+              <div class="store-selection-card">
+                <div class="store-selection-header">
+                  <h4>Pilih Store</h4>
+                </div>
+                <div class="store-selection-body">
+                  <select id="storeSelect" class="form-control">
+                    <option value="">Pilih Store</option>
+                    <?php foreach ($stores as $store): ?>
+                    <option value="<?= $store['id_store'] ?>"><?= htmlspecialchars($store['nama_store']) ?> - <?= htmlspecialchars($store['alamat_store']) ?></option>
+                    <?php endforeach; ?>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row mb-4">
             <div class="col-lg-8 col-md-12">
               <div class="products-card">
                 <div class="products-header">
@@ -45,40 +63,12 @@
                   </div>
                 </div>
                 <div class="products-body">
-                  <?php if (!empty($produkByCategory)): ?>
-                    <?php foreach ($produkByCategory as $kategori => $produkList): ?>
-                    <div class="category-section">
-                      <h5 class="category-title"><?= htmlspecialchars($kategori) ?></h5>
-                      <div class="products-grid">
-                        <?php foreach ($produkList as $produk): ?>
-                        <div class="product-item" data-produk-id="<?= $produk['produk_id'] ?>">
-                          <div class="product-info">
-                            <h6 class="product-name"><?= htmlspecialchars($produk['nama_produk']) ?></h6>
-                            <p class="product-price">Rp <?= number_format($produk['harga']) ?></p>
-                            <p class="product-stock">Stok: <?= $produk['stok'] ?></p>
-                            <p class="product-points">Poin: <?= $produk['poin_reward'] ?></p>
-                          </div>
-                          <div class="product-actions">
-                            <button type="button" class="btn btn-primary btn-sm add-to-cart" 
-                                    data-produk-id="<?= $produk['produk_id'] ?>"
-                                    data-nama="<?= htmlspecialchars($produk['nama_produk']) ?>"
-                                    data-harga="<?= $produk['harga'] ?>"
-                                    data-stok="<?= $produk['stok'] ?>"
-                                    data-poin="<?= $produk['poin_reward'] ?>">
-                              <i class="fas fa-plus"></i> Tambah
-                            </button>
-                          </div>
-                        </div>
-                        <?php endforeach; ?>
-                      </div>
+                  <div id="productCatalog">
+                    <div class="select-store-message">
+                      <i class="fas fa-store"></i>
+                      <p>Pilih store terlebih dahulu untuk melihat produk</p>
                     </div>
-                    <?php endforeach; ?>
-                  <?php else: ?>
-                    <div class="empty-state">
-                      <i class="fas fa-box-open"></i>
-                      <p>Tidak ada produk tersedia</p>
-                    </div>
-                  <?php endif; ?>
+                  </div>
                 </div>
               </div>
             </div>
@@ -111,7 +101,9 @@
                   </button>
                 </div>
                 <div class="cart-body">
-                  <form id="checkoutForm" method="POST" action="index.php?controller=pembelian&action=create">
+                  <form id="checkoutForm" method="POST" action="index.php?controller=pembelian&action=create" enctype="multipart/form-data">
+                    <input type="hidden" id="selectedStoreId" name="store_id" value="">
+                    
                     <div id="cartItems">
                       <div class="empty-cart">
                         <i class="fas fa-shopping-cart"></i>
@@ -145,6 +137,12 @@
                         <option value="<?= $value ?>"><?= htmlspecialchars($label) ?></option>
                         <?php endforeach; ?>
                       </select>
+                      
+                      <div id="buktiPembayaranContainer" style="display: none; margin-top: 1rem;">
+                        <label for="buktiPembayaran">Upload Bukti Pembayaran:</label>
+                        <input type="file" name="bukti_pembayaran" id="buktiPembayaran" class="form-control" accept="image/*">
+                        <small class="form-text text-muted">Format: JPG, PNG. Maksimal 5MB.</small>
+                      </div>
                     </div>
 
                     <button type="submit" class="btn btn-success btn-block checkout-btn" style="display: none;">
@@ -166,10 +164,7 @@
                   </a>
                 </div>
                 <div class="recent-transactions-body">
-                  <?php 
-                  $recentTransactions = $this->model->getMemberTransaksiHistory($memberData['customer_id'], 5, 0);
-                  if (!empty($recentTransactions)): 
-                  ?>
+                  <?php if (!empty($recentTransactions)): ?>
                     <div class="transactions-grid">
                       <?php foreach ($recentTransactions as $transaction): ?>
                       <div class="transaction-card-item">
@@ -184,6 +179,10 @@
                         </div>
                         
                         <div class="transaction-summary-item">
+                          <div class="summary-detail">
+                            <span class="detail-label">Store:</span>
+                            <span class="detail-value"><?= htmlspecialchars($transaction['nama_store'] ?? 'N/A') ?></span>
+                          </div>
                           <div class="summary-detail">
                             <span class="detail-label">Total Item:</span>
                             <span class="detail-value"><?= $transaction['total_item'] ?></span>
@@ -263,19 +262,23 @@
       margin-bottom: 0;
     }
 
-    .products-card, .member-info-card, .cart-card {
+    .store-selection-card, .products-card, .member-info-card, .cart-card {
       background: white;
       border-radius: 12px;
       box-shadow: var(--shadow);
       border: 1px solid var(--border-color);
     }
 
-    .products-header, .member-info-header, .cart-header {
+    .store-selection-header, .products-header, .member-info-header, .cart-header {
       padding: 1.5rem;
       border-bottom: 1px solid var(--border-color);
       display: flex;
       justify-content: space-between;
       align-items: center;
+    }
+
+    .store-selection-body, .products-body, .member-info-body, .cart-body {
+      padding: 1.5rem;
     }
 
     .products-title {
@@ -286,10 +289,6 @@
 
     .search-container {
       width: 300px;
-    }
-
-    .products-body, .member-info-body, .cart-body {
-      padding: 1.5rem;
     }
 
     .category-section {
@@ -306,34 +305,57 @@
 
     .products-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 1rem;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1.5rem;
     }
 
     .product-item {
       border: 1px solid var(--border-color);
-      border-radius: 8px;
-      padding: 1rem;
+      border-radius: 12px;
+      overflow: hidden;
       transition: all 0.3s ease;
       background: white;
     }
 
     .product-item:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+      transform: translateY(-4px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+
+    .product-image {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      background: var(--light-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #6c757d;
+      font-size: 3rem;
+    }
+
+    .product-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .product-info {
+      padding: 1rem;
     }
 
     .product-name {
       font-weight: 600;
       margin-bottom: 0.5rem;
       color: var(--dark-color);
+      font-size: 1.1rem;
     }
 
     .product-price {
-      font-size: 1.1rem;
+      font-size: 1.2rem;
       font-weight: 700;
       color: var(--success-color);
-      margin-bottom: 0.3rem;
+      margin-bottom: 0.5rem;
     }
 
     .product-stock, .product-points {
@@ -343,7 +365,8 @@
     }
 
     .product-actions {
-      margin-top: 1rem;
+      padding: 1rem;
+      padding-top: 0;
     }
 
     .membership-badge {
@@ -444,13 +467,13 @@
       font-weight: 600;
     }
 
-    .empty-state, .empty-cart {
+    .empty-state, .empty-cart, .select-store-message {
       text-align: center;
       padding: 2rem;
       color: #6c757d;
     }
 
-    .empty-state i, .empty-cart i {
+    .empty-state i, .empty-cart i, .select-store-message i {
       font-size: 3rem;
       margin-bottom: 1rem;
       opacity: 0.5;
@@ -637,6 +660,7 @@
 
   <script>
     let cart = [];
+    let selectedStoreId = null;
     const memberDiscount = <?= $memberData['diskon_persen'] ?>;
     const memberMultiplier = <?= $memberData['poin_per_pembelian'] ?>;
 
@@ -646,6 +670,118 @@
     });
 
     function initializeEventListeners() {
+      document.getElementById('storeSelect').addEventListener('change', function() {
+        selectedStoreId = this.value;
+        document.getElementById('selectedStoreId').value = selectedStoreId;
+        loadProductsByStore();
+        clearCart();
+      });
+
+      document.getElementById('metodePembayaran').addEventListener('change', function() {
+        const buktiContainer = document.getElementById('buktiPembayaranContainer');
+        const buktiInput = document.getElementById('buktiPembayaran');
+        
+        if (this.value === 'transfer') {
+          buktiContainer.style.display = 'block';
+          buktiInput.required = true;
+        } else {
+          buktiContainer.style.display = 'none';
+          buktiInput.required = false;
+        }
+      });
+
+      document.querySelector('.clear-cart').addEventListener('click', clearCart);
+      document.getElementById('searchProduk').addEventListener('input', searchProducts);
+    }
+
+    function loadProductsByStore() {
+      if (!selectedStoreId) {
+        document.getElementById('productCatalog').innerHTML = `
+          <div class="select-store-message">
+            <i class="fas fa-store"></i>
+            <p>Pilih store terlebih dahulu untuk melihat produk</p>
+          </div>
+        `;
+        return;
+      }
+
+      fetch(`index.php?controller=pembelian&action=getProdukByStore&store_id=${selectedStoreId}`)
+        .then(response => response.json())
+        .then(data => {
+          displayProducts(data);
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          document.getElementById('productCatalog').innerHTML = `
+            <div class="empty-state">
+              <i class="fas fa-exclamation-triangle"></i>
+              <p>Terjadi kesalahan saat memuat produk</p>
+            </div>
+          `;
+        });
+    }
+
+    function displayProducts(produkByCategory) {
+      const catalogContainer = document.getElementById('productCatalog');
+      
+      if (Object.keys(produkByCategory).length === 0) {
+        catalogContainer.innerHTML = `
+          <div class="empty-state">
+            <i class="fas fa-box-open"></i>
+            <p>Tidak ada produk tersedia di store ini</p>
+          </div>
+        `;
+        return;
+      }
+
+      let html = '';
+      for (const [kategori, produkList] of Object.entries(produkByCategory)) {
+        html += `
+          <div class="category-section">
+            <h5 class="category-title">${kategori}</h5>
+            <div class="products-grid">
+        `;
+        
+        produkList.forEach(produk => {
+          const fotoSrc = produk.foto_produk ? `foto_produk/${produk.foto_produk}` : null;
+          
+          html += `
+            <div class="product-item" data-produk-id="${produk.produk_id}">
+              <div class="product-image">
+                ${fotoSrc ? 
+                  `<img src="${fotoSrc}" alt="${produk.nama_produk}" onerror="this.parentElement.innerHTML='<i class=&quot;fas fa-image&quot;></i>'">` :
+                  '<i class="fas fa-image"></i>'
+                }
+              </div>
+              <div class="product-info">
+                <h6 class="product-name">${produk.nama_produk}</h6>
+                <p class="product-price">Rp ${parseInt(produk.harga).toLocaleString()}</p>
+                <p class="product-stock">Stok: ${produk.stok}</p>
+                <p class="product-points">Poin: ${produk.poin_reward}</p>
+              </div>
+              <div class="product-actions">
+                <button type="button" class="btn btn-primary btn-block add-to-cart" 
+                        data-produk-id="${produk.produk_id}"
+                        data-nama="${produk.nama_produk}"
+                        data-harga="${produk.harga}"
+                        data-stok="${produk.stok}"
+                        data-poin="${produk.poin_reward}"
+                        ${produk.stok <= 0 ? 'disabled' : ''}>
+                  <i class="fas fa-plus"></i> ${produk.stok <= 0 ? 'Stok Habis' : 'Tambah ke Keranjang'}
+                </button>
+              </div>
+            </div>
+          `;
+        });
+        
+        html += `
+            </div>
+          </div>
+        `;
+      }
+      
+      catalogContainer.innerHTML = html;
+      
       document.querySelectorAll('.add-to-cart').forEach(btn => {
         btn.addEventListener('click', function() {
           const produkId = this.dataset.produkId;
@@ -657,12 +793,14 @@
           addToCart(produkId, nama, harga, stok, poin);
         });
       });
-
-      document.querySelector('.clear-cart').addEventListener('click', clearCart);
-      document.getElementById('searchProduk').addEventListener('input', searchProducts);
     }
 
     function addToCart(produkId, nama, harga, stok, poin) {
+      if (!selectedStoreId) {
+        alert('Pilih store terlebih dahulu');
+        return;
+      }
+
       const existingItem = cart.find(item => item.produkId === produkId);
       
       if (existingItem) {
@@ -774,7 +912,7 @@
     }
 
     function clearCart() {
-      if (confirm('Yakin ingin mengosongkan keranjang?')) {
+      if (cart.length === 0 || confirm('Yakin ingin mengosongkan keranjang?')) {
         cart = [];
         updateCartDisplay();
       }
@@ -795,9 +933,24 @@
     }
 
     document.getElementById('checkoutForm').addEventListener('submit', function(e) {
+      if (!selectedStoreId) {
+        e.preventDefault();
+        alert('Pilih store terlebih dahulu');
+        return;
+      }
+
       if (cart.length === 0) {
         e.preventDefault();
         alert('Keranjang masih kosong');
+        return;
+      }
+
+      const metodePembayaran = document.getElementById('metodePembayaran').value;
+      const buktiPembayaran = document.getElementById('buktiPembayaran');
+
+      if (metodePembayaran === 'transfer' && (!buktiPembayaran.files || buktiPembayaran.files.length === 0)) {
+        e.preventDefault();
+        alert('Upload bukti pembayaran untuk metode transfer');
         return;
       }
 
@@ -819,10 +972,22 @@
           .then(response => response.json())
           .then(data => {
             if (data.success) {
+              if (!selectedStoreId) {
+                alert('Pilih store terlebih dahulu sebelum menambah produk ke keranjang');
+                return;
+              }
+              
+              let addedItems = 0;
               data.items.forEach(item => {
-                addToCart(item.produk_id, item.nama_produk, item.harga_satuan, item.stok_tersedia, item.poin_reward, item.jumlah);
+                const success = addToCartFromReorder(item.produk_id, item.nama_produk, item.harga_satuan, item.stok_tersedia, item.poin_reward, item.jumlah);
+                if (success) addedItems++;
               });
-              alert('Produk berhasil ditambahkan ke keranjang!');
+              
+              if (addedItems > 0) {
+                alert(`${addedItems} produk berhasil ditambahkan ke keranjang!`);
+              } else {
+                alert('Tidak ada produk yang bisa ditambahkan (stok habis atau tidak tersedia di store ini)');
+              }
             } else {
               alert('Gagal memuat data transaksi');
             }
@@ -834,31 +999,40 @@
       }
     }
 
-    function addToCart(produkId, nama, harga, stok, poin, jumlahRequest = 1) {
+    function addToCartFromReorder(produkId, nama, harga, stok, poin, jumlahRequest) {
+      if (!selectedStoreId) {
+        return false;
+      }
+
+      if (stok <= 0) {
+        return false;
+      }
+
       const existingItem = cart.find(item => item.produkId === produkId);
       
       if (existingItem) {
-        const newQuantity = existingItem.jumlah + jumlahRequest;
-        if (newQuantity <= stok) {
+        const newQuantity = Math.min(existingItem.jumlah + jumlahRequest, stok);
+        if (newQuantity > existingItem.jumlah) {
           existingItem.jumlah = newQuantity;
           updateCartDisplay();
-        } else {
-          alert(`Stok ${nama} tidak mencukupi. Tersedia: ${stok}, di keranjang: ${existingItem.jumlah}`);
+          return true;
         }
+        return false;
       } else {
-        if (jumlahRequest <= stok) {
+        const actualQuantity = Math.min(jumlahRequest, stok);
+        if (actualQuantity > 0) {
           cart.push({
             produkId: produkId,
             nama: nama,
             harga: harga,
             stok: stok,
             poin: poin,
-            jumlah: jumlahRequest
+            jumlah: actualQuantity
           });
           updateCartDisplay();
-        } else {
-          alert(`Stok ${nama} tidak mencukupi`);
+          return true;
         }
+        return false;
       }
     }
   </script>

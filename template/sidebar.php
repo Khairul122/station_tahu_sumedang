@@ -14,7 +14,7 @@ $isLoggedIn = isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true;
         </a>
       </li>
 
-      <?php if ($userRole === 'admin'): ?>
+      <?php if ($userRole === 'admin' || $userRole === 'manajer'): ?>
           <li class="nav-item">
           <a class="nav-link" href="?controller=Store&action=index">
             <i class="mdi mdi-package-variant menu-icon"></i>
