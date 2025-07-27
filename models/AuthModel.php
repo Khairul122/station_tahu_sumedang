@@ -8,7 +8,7 @@ class AuthModel {
     }
     
     public function login($username, $password) {
-        $stmt = $this->conn->prepare("SELECT user_id, username, password, nama_lengkap, email, role, status FROM users WHERE username = ? AND status = 'aktif'");
+        $stmt = $this->conn->prepare("SELECT user_id, username, password, nama_lengkap, email, role, status, store_id FROM users WHERE username = ? AND status = 'aktif'");
         $stmt->bind_param("s", $username);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -25,6 +25,7 @@ class AuthModel {
                 $_SESSION['email'] = $user['email'];
                 $_SESSION['role'] = $user['role'];
                 $_SESSION['status'] = $user['status'];
+                $_SESSION['store_id'] = $user['store_id'];
                 $_SESSION['logged_in'] = true;
                 
                 if ($user['role'] === 'member') {
@@ -36,6 +37,14 @@ class AuthModel {
                         $_SESSION['nama_membership'] = $memberData['nama_membership'];
                         $_SESSION['total_poin'] = $memberData['total_poin'];
                         $_SESSION['total_pembelian'] = $memberData['total_pembelian'];
+                    }
+                }
+                
+                if ($user['role'] === 'manajer' || $user['role'] === 'admin') {
+                    $storeData = $this->getStoreData($user['store_id']);
+                    if ($storeData) {
+                        $_SESSION['nama_store'] = $storeData['nama_store'];
+                        $_SESSION['alamat_store'] = $storeData['alamat_store'];
                     }
                 }
                 
@@ -78,7 +87,8 @@ class AuthModel {
                 'nama_lengkap' => $_SESSION['nama_lengkap'],
                 'email' => $_SESSION['email'],
                 'role' => $_SESSION['role'],
-                'status' => $_SESSION['status']
+                'status' => $_SESSION['status'],
+                'store_id' => $_SESSION['store_id'] ?? null
             ];
             
             if ($_SESSION['role'] === 'member') {
@@ -88,6 +98,11 @@ class AuthModel {
                 $userData['nama_membership'] = $_SESSION['nama_membership'] ?? null;
                 $userData['total_poin'] = $_SESSION['total_poin'] ?? 0;
                 $userData['total_pembelian'] = $_SESSION['total_pembelian'] ?? 0;
+            }
+            
+            if ($_SESSION['role'] === 'manajer' || $_SESSION['role'] === 'admin') {
+                $userData['nama_store'] = $_SESSION['nama_store'] ?? null;
+                $userData['alamat_store'] = $_SESSION['alamat_store'] ?? null;
             }
             
             return $userData;
@@ -132,8 +147,20 @@ class AuthModel {
         $this->requireRole(['member']);
     }
     
+    public function requireManajerRole() {
+        $this->requireRole(['manajer']);
+    }
+    
     public function requireAdminOrPimpinanRole() {
         $this->requireRole(['admin', 'pimpinan']);
+    }
+    
+    public function requireAdminOrManajerRole() {
+        $this->requireRole(['admin', 'manajer']);
+    }
+    
+    public function requireAllStaffRole() {
+        $this->requireRole(['admin', 'pimpinan', 'manajer']);
     }
     
     public function getMemberData($userId) {
@@ -150,6 +177,22 @@ class AuthModel {
             WHERE c.user_id = ? AND c.status_aktif = 'aktif'
         ");
         $stmt->bind_param("i", $userId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows > 0) {
+            return $result->fetch_assoc();
+        }
+        return null;
+    }
+    
+    public function getStoreData($storeId) {
+        if (empty($storeId)) {
+            return null;
+        }
+        
+        $stmt = $this->conn->prepare("SELECT nama_store, alamat_store FROM store WHERE id_store = ?");
+        $stmt->bind_param("i", $storeId);
         $stmt->execute();
         $result = $stmt->get_result();
         
@@ -361,5 +404,12 @@ class AuthModel {
     public function isMember() {
         return $this->getUserRole() === 'member';
     }
+    
+    public function isManajer() {
+        return $this->getUserRole() === 'manajer';
+    }
+    
+    public function isStaff() {
+        return in_array($this->getUserRole(), ['admin', 'pimpinan', 'manajer']);
+    }
 }
-?>

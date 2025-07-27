@@ -1,4 +1,4 @@
-<?php include('template/header.php'); ?>
+    <?php include('template/header.php'); ?>
 
 <body class="with-welcome-text">
   <div class="container-scroller">
@@ -13,7 +13,7 @@
               <div class="row">
                 <div class="col-12 col-xl-8 mb-4 mb-xl-0">
                   <h3 class="font-weight-bold"><?= $title ?></h3>
-                  <h6 class="font-weight-normal mb-0">Kelola semua store Station Tahu Sumedang</h6>
+                  <h6 class="font-weight-normal mb-0">Kelola semua manajer store Station Tahu Sumedang</h6>
                 </div>
               </div>
             </div>
@@ -24,16 +24,13 @@
               <div class="card">
                 <div class="card-body">
                   <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h4 class="card-title">Daftar Store</h4>
+                    <h4 class="card-title">Daftar Manajer</h4>
                     <div class="btn-group" role="group">
-                      <a href="index.php?controller=store&action=add" class="btn btn-primary">
-                        <i class="mdi mdi-plus"></i> Tambah Store
+                      <a href="index.php?controller=manajer&action=registrasi" class="btn btn-primary">
+                        <i class="mdi mdi-account-plus"></i> Tambah Manajer
                       </a>
-                      <a href="index.php?controller=manajer&action=registrasi" class="btn btn-success">
-                        <i class="mdi mdi-account-plus"></i> Registrasi Manajer
-                      </a>
-                      <a href="index.php?controller=manajer&action=daftar" class="btn btn-info">
-                        <i class="mdi mdi-account-group"></i> Daftar Manajer
+                      <a href="index.php?controller=store" class="btn btn-info">
+                        <i class="mdi mdi-store"></i> Kelola Store
                       </a>
                     </div>
                   </div>
@@ -55,27 +52,41 @@
                   <div class="row mb-3">
                     <div class="col-md-6">
                       <form method="GET" class="d-flex">
-                        <input type="hidden" name="controller" value="store">
+                        <input type="hidden" name="controller" value="manajer">
+                        <input type="hidden" name="action" value="daftar">
                         <input type="text" class="form-control me-2" name="search" 
                                value="<?= htmlspecialchars($search) ?>" 
-                               placeholder="Cari store...">
+                               placeholder="Cari manajer...">
                         <button type="submit" class="btn btn-outline-primary">
                           <i class="mdi mdi-magnify"></i>
                         </button>
                         <?php if (!empty($search)): ?>
-                          <a href="index.php?controller=store" class="btn btn-outline-secondary ms-2">
+                          <a href="index.php?controller=manajer&action=daftar" class="btn btn-outline-secondary ms-2">
                             <i class="mdi mdi-close"></i>
                           </a>
                         <?php endif; ?>
                       </form>
                     </div>
                     <div class="col-md-6">
-                      <div class="d-flex justify-content-end">
-                        <div class="text-muted small">
-                          <i class="mdi mdi-information"></i>
-                          Total Store: <strong><?= count($stores) ?></strong>
-                        </div>
-                      </div>
+                      <form method="GET" class="d-flex">
+                        <input type="hidden" name="controller" value="manajer">
+                        <input type="hidden" name="action" value="daftar">
+                        <input type="hidden" name="search" value="<?= htmlspecialchars($search) ?>">
+                        <select class="form-control me-2" name="store_id" onchange="this.form.submit()">
+                          <option value="">-- Semua Store --</option>
+                          <?php foreach ($stores as $store): ?>
+                            <option value="<?= $store['id_store'] ?>" 
+                                    <?= ($store_filter == $store['id_store']) ? 'selected' : '' ?>>
+                              <?= htmlspecialchars($store['nama_store']) ?>
+                            </option>
+                          <?php endforeach; ?>
+                        </select>
+                        <?php if (!empty($store_filter)): ?>
+                          <a href="index.php?controller=manajer&action=daftar<?= !empty($search) ? '&search=' . urlencode($search) : '' ?>" class="btn btn-outline-secondary">
+                            <i class="mdi mdi-close"></i>
+                          </a>
+                        <?php endif; ?>
+                      </form>
                     </div>
                   </div>
                   
@@ -84,43 +95,52 @@
                       <thead>
                         <tr>
                           <th>No</th>
-                          <th>Nama Store</th>
-                          <th>Alamat</th>
-                          <th>Manajer</th>
+                          <th>Username</th>
+                          <th>Nama Lengkap</th>
+                          <th>Email</th>
+                          <th>Store</th>
+                          <th>Role</th>
                           <th>Status</th>
                           <th>Aksi</th>
                         </tr>
                       </thead>
                       <tbody>
-                        <?php if (!empty($stores)): ?>
+                        <?php if (!empty($managers)): ?>
                           <?php $no = 1; ?>
-                          <?php foreach ($stores as $store): ?>
+                          <?php foreach ($managers as $manager): ?>
                             <tr>
                               <td><?= $no++ ?></td>
                               <td>
-                                <strong><?= htmlspecialchars($store['nama_store']) ?></strong>
-                                <small class="text-muted d-block">ID: <?= $store['id_store'] ?></small>
+                                <strong><?= htmlspecialchars($manager['username']) ?></strong>
+                                <small class="text-muted d-block">ID: <?= $manager['user_id'] ?></small>
                               </td>
+                              <td><?= htmlspecialchars($manager['nama_lengkap']) ?></td>
+                              <td><?= htmlspecialchars($manager['email'] ?: '-') ?></td>
                               <td>
-                                <span class="d-inline-block text-truncate" style="max-width: 200px;" title="<?= htmlspecialchars($store['alamat_store']) ?>">
-                                  <?= htmlspecialchars($store['alamat_store']) ?>
-                                </span>
-                              </td>
-                              <td>
-                                <?php if ($store['manajer_store']): ?>
-                                  <span class="badge bg-primary">
-                                    <i class="mdi mdi-account-check"></i>
-                                    <?= htmlspecialchars($store['manajer_store']) ?>
+                                <?php if ($manager['nama_store']): ?>
+                                  <span class="badge bg-info">
+                                    <?= htmlspecialchars($manager['nama_store']) ?>
                                   </span>
+                                  <small class="text-muted d-block"><?= htmlspecialchars($manager['alamat_store']) ?></small>
                                 <?php else: ?>
-                                  <span class="badge bg-warning text-dark">
-                                    <i class="mdi mdi-account-alert"></i>
-                                    Belum Ada Manajer
-                                  </span>
+                                  <span class="badge bg-warning text-dark">Tidak Ada Store</span>
                                 <?php endif; ?>
                               </td>
                               <td>
-                                <?php if ($store['status_store'] == 'aktif'): ?>
+                                <?php 
+                                  $roleColors = [
+                                    'admin' => 'bg-danger',
+                                    'manajer' => 'bg-primary', 
+                                    'member' => 'bg-success'
+                                  ];
+                                  $roleColor = $roleColors[$manager['role']] ?? 'bg-secondary';
+                                ?>
+                                <span class="badge <?= $roleColor ?>">
+                                  <?= ucfirst($manager['role']) ?>
+                                </span>
+                              </td>
+                              <td>
+                                <?php if ($manager['status'] == 'aktif'): ?>
                                   <span class="badge bg-success">
                                     <i class="mdi mdi-check"></i> Aktif
                                   </span>
@@ -132,22 +152,18 @@
                               </td>
                               <td>
                                 <div class="btn-group" role="group">
-                                  <a href="index.php?controller=store&action=view&id=<?= $store['id_store'] ?>" 
-                                     class="btn btn-sm btn-info" title="Lihat Detail">
-                                    <i class="mdi mdi-eye"></i>
-                                  </a>
-                                  <a href="index.php?controller=store&action=edit&id=<?= $store['id_store'] ?>" 
+                                  <a href="index.php?controller=manajer&action=edit&id=<?= $manager['user_id'] ?>" 
                                      class="btn btn-sm btn-warning" title="Edit">
                                     <i class="mdi mdi-pencil"></i>
                                   </a>
-                                  <?php if (!$store['manajer_store']): ?>
-                                    <a href="index.php?controller=manajer&action=registrasi&store_id=<?= $store['id_store'] ?>" 
-                                       class="btn btn-sm btn-success" title="Tambah Manajer">
-                                      <i class="mdi mdi-account-plus"></i>
-                                    </a>
-                                  <?php endif; ?>
+                                  <a href="index.php?controller=manajer&action=toggleStatus&id=<?= $manager['user_id'] ?>" 
+                                     class="btn btn-sm <?= $manager['status'] == 'aktif' ? 'btn-secondary' : 'btn-success' ?>" 
+                                     title="<?= $manager['status'] == 'aktif' ? 'Nonaktifkan' : 'Aktifkan' ?>"
+                                     onclick="return confirm('Yakin ingin mengubah status manajer ini?')">
+                                    <i class="mdi mdi-<?= $manager['status'] == 'aktif' ? 'pause' : 'play' ?>"></i>
+                                  </a>
                                   <button type="button" class="btn btn-sm btn-danger" 
-                                          onclick="confirmDelete(<?= $store['id_store'] ?>, '<?= htmlspecialchars($store['nama_store']) ?>')"
+                                          onclick="confirmDelete(<?= $manager['user_id'] ?>, '<?= htmlspecialchars($manager['nama_lengkap']) ?>')"
                                           title="Hapus">
                                     <i class="mdi mdi-delete"></i>
                                   </button>
@@ -157,25 +173,33 @@
                           <?php endforeach; ?>
                         <?php else: ?>
                           <tr>
-                            <td colspan="6" class="text-center py-4">
+                            <td colspan="8" class="text-center py-4">
                               <div class="empty-state">
-                                <i class="mdi mdi-store-outline text-muted" style="font-size: 3rem;"></i>
+                                <i class="mdi mdi-account-group-outline text-muted" style="font-size: 3rem;"></i>
                                 <h5 class="text-muted mt-2">
-                                  <?php if (!empty($search)): ?>
-                                    Tidak ada store yang ditemukan
+                                  <?php if (!empty($search) || !empty($store_filter)): ?>
+                                    Tidak ada manajer yang ditemukan
                                   <?php else: ?>
-                                    Belum ada data store
+                                    Belum ada data manajer
                                   <?php endif; ?>
                                 </h5>
-                                <?php if (!empty($search)): ?>
-                                  <p class="text-muted">dengan kata kunci "<?= htmlspecialchars($search) ?>"</p>
-                                  <a href="index.php?controller=store" class="btn btn-outline-primary">
-                                    <i class="mdi mdi-arrow-left"></i> Kembali ke semua store
+                                <?php if (!empty($search) || !empty($store_filter)): ?>
+                                  <p class="text-muted">
+                                    <?php if (!empty($search)): ?>
+                                      dengan kata kunci "<?= htmlspecialchars($search) ?>"
+                                    <?php endif ?>
+                                    <?php if (!empty($search) && !empty($store_filter)): ?> dan <?php endif ?>
+                                    <?php if (!empty($store_filter)): ?>
+                                      di store yang dipilih
+                                    <?php endif ?>
+                                  </p>
+                                  <a href="index.php?controller=manajer&action=daftar" class="btn btn-outline-primary">
+                                    <i class="mdi mdi-arrow-left"></i> Tampilkan Semua
                                   </a>
                                 <?php else: ?>
-                                  <p class="text-muted">Mulai dengan menambahkan store pertama</p>
-                                  <a href="index.php?controller=store&action=add" class="btn btn-primary">
-                                    <i class="mdi mdi-plus"></i> Tambah Store
+                                  <p class="text-muted">Mulai dengan menambahkan manajer pertama</p>
+                                  <a href="index.php?controller=manajer&action=registrasi" class="btn btn-primary">
+                                    <i class="mdi mdi-account-plus"></i> Tambah Manajer
                                   </a>
                                 <?php endif; ?>
                               </div>
@@ -186,21 +210,33 @@
                     </table>
                   </div>
                   
-                  <?php if (!empty($stores)): ?>
+                  <?php if (!empty($managers)): ?>
                     <div class="mt-3 d-flex justify-content-between align-items-center">
                       <small class="text-muted">
-                        Menampilkan <?= count($stores) ?> store
+                        Menampilkan <?= count($managers) ?> manajer
                         <?php if (!empty($search)): ?>
                           dari pencarian "<?= htmlspecialchars($search) ?>"
+                        <?php endif; ?>
+                        <?php if (!empty($store_filter)): ?>
+                          <?php 
+                            $selectedStore = array_filter($stores, function($s) use ($store_filter) { 
+                              return $s['id_store'] == $store_filter; 
+                            });
+                            $selectedStore = reset($selectedStore);
+                          ?>
+                          di store "<?= htmlspecialchars($selectedStore['nama_store']) ?>"
                         <?php endif; ?>
                       </small>
                       
                       <div class="d-flex gap-2">
                         <small class="text-muted">
-                          <span class="badge bg-success">Aktif: <?= count(array_filter($stores, function($s) { return $s['status_store'] == 'aktif'; })) ?></span>
+                          <span class="badge bg-success">Aktif: <?= count(array_filter($managers, function($m) { return $m['status'] == 'aktif'; })) ?></span>
                         </small>
                         <small class="text-muted">
-                          <span class="badge bg-primary">Dengan Manajer: <?= count(array_filter($stores, function($s) { return !empty($s['manajer_store']); })) ?></span>
+                          <span class="badge bg-primary">Manajer: <?= count(array_filter($managers, function($m) { return $m['role'] == 'manajer'; })) ?></span>
+                        </small>
+                        <small class="text-muted">
+                          <span class="badge bg-danger">Admin: <?= count(array_filter($managers, function($m) { return $m['role'] == 'admin'; })) ?></span>
                         </small>
                       </div>
                     </div>
@@ -237,18 +273,32 @@
     
     .bg-success {
       background-color: #198754 !important;
+      color: white;
     }
     
     .bg-danger {
       background-color: #dc3545 !important;
+      color: white;
     }
     
     .bg-primary {
       background-color: #0d6efd !important;
+      color: white;
     }
     
     .bg-warning {
       background-color: #ffc107 !important;
+      color: #000;
+    }
+    
+    .bg-info {
+      background-color: #0dcaf0 !important;
+      color: #000;
+    }
+    
+    .bg-secondary {
+      background-color: #6c757d !important;
+      color: white;
     }
     
     .alert {
@@ -263,11 +313,6 @@
     .btn-primary {
       background-color: #0d6efd;
       border-color: #0d6efd;
-    }
-    
-    .btn-success {
-      background-color: #198754;
-      border-color: #198754;
     }
     
     .btn-info {
@@ -299,10 +344,16 @@
       gap: 0.5rem;
     }
     
-    .text-truncate {
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+    .d-flex {
+      display: flex;
+    }
+    
+    .justify-content-between {
+      justify-content: space-between;
+    }
+    
+    .align-items-center {
+      align-items: center;
     }
     
     @media (max-width: 992px) {
@@ -328,9 +379,8 @@
         border-radius: 0.375rem !important;
       }
       
-      .d-flex.justify-content-end {
-        justify-content: start !important;
-        margin-top: 1rem;
+      .row.mb-3 .col-md-6 {
+        margin-bottom: 1rem;
       }
       
       .table-responsive {
@@ -341,13 +391,18 @@
         font-size: 0.7em;
         padding: 0.25rem 0.4rem;
       }
+      
+      .d-flex.justify-content-between:last-child {
+        flex-direction: column;
+        gap: 1rem;
+      }
     }
   </style>
   
   <script>
     function confirmDelete(id, nama) {
-      if (confirm(`Apakah Anda yakin ingin menghapus store "${nama}"?\n\nPerhatian: Store yang memiliki produk tidak dapat dihapus.`)) {
-        window.location.href = `index.php?controller=store&action=delete&id=${id}`;
+      if (confirm(`Apakah Anda yakin ingin menghapus manajer "${nama}"?\n\nPerhatian: Data yang terkait akan ikut terhapus.`)) {
+        window.location.href = `index.php?controller=manajer&action=delete&id=${id}`;
       }
     }
     
@@ -361,22 +416,8 @@
           }, 300);
         }, 5000);
       });
-      
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('store_id')) {
-        const storeId = urlParams.get('store_id');
-        const row = document.querySelector(`tr:has(td:contains('ID: ${storeId}'))`);
-        if (row) {
-          row.style.backgroundColor = '#fff3cd';
-          setTimeout(() => {
-            row.style.backgroundColor = '';
-          }, 3000);
-        }
-      }
     });
   </script>
   
   <?php include 'template/script.php'; ?>
 </body>
-
-</html>

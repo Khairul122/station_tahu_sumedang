@@ -187,6 +187,8 @@ class AuthController
             header('Location: index.php?controller=dashboard&action=pimpinan');
         } elseif ($role === 'member') {
             header('Location: index.php?controller=dashboard&action=member');
+        } elseif ($role === 'manajer') {
+            header('Location: index.php?controller=dashboard&action=manajer');
         } else {
             header('Location: index.php?controller=auth&action=login');
         }
@@ -225,4 +227,3 @@ class AuthController
         return $errors;
     }
 }
-?>

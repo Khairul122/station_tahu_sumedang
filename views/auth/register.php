@@ -131,38 +131,6 @@
             box-shadow: 0 10px 30px rgba(255, 107, 107, 0.3);
         }
         
-        .role-selector {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border-radius: 15px;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            text-align: center;
-        }
-        
-        .role-option {
-            background: white;
-            border: 2px solid #e9ecef;
-            border-radius: 15px;
-            padding: 1rem;
-            margin: 0.5rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: inline-block;
-            min-width: 150px;
-        }
-        
-        .role-option.active {
-            border-color: #ff6b6b;
-            background: linear-gradient(135deg, #fff5f5 0%, #ffe6e6 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.2);
-        }
-        
-        .role-option:hover {
-            border-color: #ff6b6b;
-            transform: translateY(-2px);
-        }
-        
         .alert {
             border-radius: 15px;
             margin-bottom: 1.5rem;
@@ -179,7 +147,7 @@
             color: white;
         }
         
-        .membership-section, .manager-section {
+        .membership-section {
             background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
             border-radius: 15px;
             padding: 1.5rem;
@@ -188,39 +156,9 @@
             transition: all 0.3s ease;
         }
         
-        .membership-section.show, .manager-section.show {
+        .membership-section.show {
             border-color: #ff6b6b;
             background: linear-gradient(135deg, #fff5f5 0%, #ffe6e6 100%);
-        }
-        
-        .form-section {
-            display: none;
-        }
-        
-        .form-section.active {
-            display: block;
-            animation: fadeIn 0.3s ease-in;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .loading-spinner {
-            border: 2px solid #f3f3f3;
-            border-top: 2px solid #ff6b6b;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            animation: spin 1s linear infinite;
-            display: inline-block;
-            margin-right: 8px;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
         }
         
         .login-link {
@@ -254,12 +192,6 @@
             .register-body {
                 padding: 1.5rem;
             }
-            
-            .role-option {
-                display: block;
-                margin: 0.5rem 0;
-                min-width: auto;
-            }
         }
     </style>
 </head>
@@ -270,7 +202,7 @@
                 <div class="register-container">
                     <div class="register-header">
                         <h3><i class="fas fa-user-plus me-2"></i>Bergabung dengan Kami</h3>
-                        <p>Pilih jenis akun dan daftar sekarang</p>
+                        <p>Daftar sekarang dan nikmati berbagai keuntungan</p>
                     </div>
                     
                     <div class="register-body">
@@ -287,126 +219,63 @@
                             </div>
                         <?php endif; ?>
                         
-                        <div class="role-selector">
-                            <h5 class="mb-3">Pilih Jenis Akun</h5>
-                            <div class="role-option" data-role="member">
-                                <i class="fas fa-user text-primary mb-2"></i>
-                                <h6>Member</h6>
-                                <small>Pelanggan biasa</small>
-                            </div>
-                            <div class="role-option" data-role="manajer">
-                                <i class="fas fa-user-tie text-success mb-2"></i>
-                                <h6>Manajer</h6>
-                                <small>Pengelola toko</small>
-                            </div>
-                        </div>
-                        
                         <form method="POST" id="registerForm">
-                            <input type="hidden" name="role" id="selectedRole" value="">
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Username</label>
+                                <input type="text" class="form-control" id="username" name="username" 
+                                       value="<?= htmlspecialchars($_POST['username'] ?? '') ?>" required>
+                            </div>
                             
-                            <div id="memberForm" class="form-section">
+                            <div class="mb-3">
+                                <label for="nama_lengkap" class="form-label">Nama Lengkap</label>
+                                <input type="text" class="form-control" id="nama_lengkap" name="nama_lengkap" 
+                                       value="<?= htmlspecialchars($_POST['nama_lengkap'] ?? '') ?>" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="email" name="email" 
+                                       value="<?= htmlspecialchars($_POST['email'] ?? '') ?>" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="password" name="password" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="confirm_password" class="form-label">Konfirmasi Password</label>
+                                <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                            </div>
+                            
+                            <div class="membership-section" id="membershipSection" style="display: none;">
                                 <div class="mb-3">
-                                    <label for="username" class="form-label">Username</label>
-                                    <input type="text" class="form-control" id="username" name="username" 
-                                           value="<?= htmlspecialchars($_POST['username'] ?? '') ?>" required>
+                                    <label for="no_telepon" class="form-label">No Telepon</label>
+                                    <input type="text" class="form-control" id="no_telepon" name="no_telepon" 
+                                           value="<?= htmlspecialchars($_POST['no_telepon'] ?? '') ?>">
                                 </div>
                                 
                                 <div class="mb-3">
-                                    <label for="nama_lengkap" class="form-label">Nama Lengkap</label>
-                                    <input type="text" class="form-control" id="nama_lengkap" name="nama_lengkap" 
-                                           value="<?= htmlspecialchars($_POST['nama_lengkap'] ?? '') ?>" required>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label for="email" class="form-label">Email</label>
-                                    <input type="email" class="form-control" id="email" name="email" 
-                                           value="<?= htmlspecialchars($_POST['email'] ?? '') ?>" required>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label for="password" class="form-label">Password</label>
-                                    <input type="password" class="form-control" id="password" name="password" required>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label for="confirm_password" class="form-label">Konfirmasi Password</label>
-                                    <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
-                                </div>
-                                
-                                <div class="membership-section" id="membershipSection" style="display: none;">
-                                    <div class="mb-3">
-                                        <label for="no_telepon" class="form-label">No Telepon</label>
-                                        <input type="text" class="form-control" id="no_telepon" name="no_telepon" 
-                                               value="<?= htmlspecialchars($_POST['no_telepon'] ?? '') ?>">
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <label for="alamat" class="form-label">Alamat</label>
-                                        <textarea class="form-control" id="alamat" name="alamat" rows="3"><?= htmlspecialchars($_POST['alamat'] ?? '') ?></textarea>
-                                    </div>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="as_membership" name="as_membership" 
-                                               <?= isset($_POST['as_membership']) ? 'checked' : '' ?>>
-                                        <label class="form-check-label" for="as_membership">
-                                            <i class="fas fa-crown text-warning me-1"></i>
-                                            Daftar sebagai Membership (dapat poin & diskon)
-                                        </label>
-                                    </div>
-                                    <small class="text-muted">
-                                        Centang jika ingin mendaftar sebagai membership untuk mendapatkan benefit khusus
-                                    </small>
+                                    <label for="alamat" class="form-label">Alamat</label>
+                                    <textarea class="form-control" id="alamat" name="alamat" rows="3"><?= htmlspecialchars($_POST['alamat'] ?? '') ?></textarea>
                                 </div>
                             </div>
                             
-                            <div id="managerForm" class="form-section">
-                                <div class="mb-3">
-                                    <label for="username_mgr" class="form-label">Username</label>
-                                    <input type="text" class="form-control" id="username_mgr" name="username" 
-                                           value="<?= htmlspecialchars($_POST['username'] ?? '') ?>">
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="as_membership" name="as_membership" 
+                                           <?= isset($_POST['as_membership']) ? 'checked' : '' ?>>
+                                    <label class="form-check-label" for="as_membership">
+                                        <i class="fas fa-crown text-warning me-1"></i>
+                                        Daftar sebagai Membership (dapat poin & diskon)
+                                    </label>
                                 </div>
-                                
-                                <div class="mb-3">
-                                    <label for="nama_lengkap_mgr" class="form-label">Nama Lengkap</label>
-                                    <input type="text" class="form-control" id="nama_lengkap_mgr" name="nama_lengkap" 
-                                           value="<?= htmlspecialchars($_POST['nama_lengkap'] ?? '') ?>">
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label for="email_mgr" class="form-label">Email</label>
-                                    <input type="email" class="form-control" id="email_mgr" name="email" 
-                                           value="<?= htmlspecialchars($_POST['email'] ?? '') ?>">
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label for="password_mgr" class="form-label">Password</label>
-                                    <input type="password" class="form-control" id="password_mgr" name="password">
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label for="confirm_password_mgr" class="form-label">Konfirmasi Password</label>
-                                    <input type="password" class="form-control" id="confirm_password_mgr" name="confirm_password">
-                                </div>
-                                
-                                <div class="manager-section show">
-                                    <div class="mb-3">
-                                        <label for="store_id" class="form-label">Pilih Store</label>
-                                        <select class="form-control" id="store_id" name="store_id">
-                                            <option value="">-- Loading stores... --</option>
-                                        </select>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <label for="no_telepon_mgr" class="form-label">No Telepon</label>
-                                        <input type="text" class="form-control" id="no_telepon_mgr" name="no_telepon" 
-                                               value="<?= htmlspecialchars($_POST['no_telepon'] ?? '') ?>">
-                                    </div>
-                                </div>
+                                <small class="text-muted">
+                                    Centang jika ingin mendaftar sebagai membership untuk mendapatkan benefit khusus
+                                </small>
                             </div>
                             
-                            <button type="submit" class="btn btn-register" id="submitBtn" style="display: none;">
+                            <button type="submit" class="btn btn-register">
                                 <i class="fas fa-user-plus me-2"></i>Daftar
                             </button>
                         </form>
@@ -425,110 +294,17 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const roleOptions = document.querySelectorAll('.role-option');
-            const selectedRoleInput = document.getElementById('selectedRole');
-            const memberForm = document.getElementById('memberForm');
-            const managerForm = document.getElementById('managerForm');
-            const submitBtn = document.getElementById('submitBtn');
             const membershipCheckbox = document.getElementById('as_membership');
             const membershipSection = document.getElementById('membershipSection');
-            const storeSelect = document.getElementById('store_id');
-            
-            let storesLoaded = false;
-            
-            async function loadStores() {
-                if (storesLoaded) return;
-                
-                try {
-                    storeSelect.innerHTML = '<option value=""><div class="loading-spinner"></div>Loading stores...</option>';
-                    
-                    const response = await fetch('auth/get_store.php');
-                    const data = await response.json();
-                    
-                    if (data.success && data.data) {
-                        storeSelect.innerHTML = '<option value="">-- Pilih Store --</option>';
-                        
-                        data.data.forEach(store => {
-                            const option = document.createElement('option');
-                            option.value = store.store_id;
-                            option.textContent = store.nama_store;
-                            
-                            const selectedStoreId = '<?= $_POST['store_id'] ?? '' ?>';
-                            if (selectedStoreId && selectedStoreId == store.store_id) {
-                                option.selected = true;
-                            }
-                            
-                            storeSelect.appendChild(option);
-                        });
-                        
-                        storesLoaded = true;
-                    } else {
-                        storeSelect.innerHTML = '<option value="">-- Error loading stores --</option>';
-                        console.error('Failed to load stores:', data.message || 'Unknown error');
-                    }
-                } catch (error) {
-                    storeSelect.innerHTML = '<option value="">-- Error loading stores --</option>';
-                    console.error('Error fetching stores:', error);
-                }
-            }
-            
-            roleOptions.forEach(option => {
-                option.addEventListener('click', function() {
-                    roleOptions.forEach(opt => opt.classList.remove('active'));
-                    this.classList.add('active');
-                    
-                    const role = this.dataset.role;
-                    selectedRoleInput.value = role;
-                    
-                    memberForm.classList.remove('active');
-                    managerForm.classList.remove('active');
-                    
-                    if (role === 'member') {
-                        memberForm.classList.add('active');
-                        setRequiredFields('member');
-                    } else if (role === 'manajer') {
-                        managerForm.classList.add('active');
-                        setRequiredFields('manager');
-                        loadStores();
-                    }
-                    
-                    submitBtn.style.display = 'block';
-                });
-            });
-            
-            function setRequiredFields(type) {
-                const memberFields = ['username', 'nama_lengkap', 'email', 'password', 'confirm_password'];
-                const managerFields = ['username_mgr', 'nama_lengkap_mgr', 'email_mgr', 'password_mgr', 'confirm_password_mgr', 'store_id', 'no_telepon_mgr'];
-                
-                document.querySelectorAll('input, select, textarea').forEach(field => {
-                    field.required = false;
-                });
-                
-                if (type === 'member') {
-                    memberFields.forEach(fieldId => {
-                        const field = document.getElementById(fieldId);
-                        if (field) field.required = true;
-                    });
-                } else if (type === 'manager') {
-                    managerFields.forEach(fieldId => {
-                        const field = document.getElementById(fieldId);
-                        if (field) field.required = true;
-                    });
-                }
-            }
-            
-            if (membershipCheckbox) {
-                membershipCheckbox.addEventListener('change', function() {
-                    toggleMembershipSection();
-                });
-            }
+            const noTeleponInput = document.getElementById('no_telepon');
+            const alamatInput = document.getElementById('alamat');
             
             function toggleMembershipSection() {
-                if (membershipCheckbox && membershipCheckbox.checked) {
+                if (membershipCheckbox.checked) {
                     membershipSection.style.display = 'block';
                     membershipSection.classList.add('show');
-                    document.getElementById('no_telepon').required = true;
-                    document.getElementById('alamat').required = true;
+                    noTeleponInput.required = true;
+                    alamatInput.required = true;
                     
                     setTimeout(() => {
                         membershipSection.scrollIntoView({ 
@@ -539,23 +315,21 @@
                 } else {
                     membershipSection.style.display = 'none';
                     membershipSection.classList.remove('show');
-                    document.getElementById('no_telepon').required = false;
-                    document.getElementById('alamat').required = false;
+                    noTeleponInput.required = false;
+                    alamatInput.required = false;
                 }
+            }
+            
+            membershipCheckbox.addEventListener('change', toggleMembershipSection);
+            
+            if (membershipCheckbox.checked) {
+                toggleMembershipSection();
             }
             
             const form = document.getElementById('registerForm');
             form.addEventListener('submit', function(e) {
-                const role = selectedRoleInput.value;
-                let password, confirmPassword;
-                
-                if (role === 'member') {
-                    password = document.getElementById('password').value;
-                    confirmPassword = document.getElementById('confirm_password').value;
-                } else if (role === 'manajer') {
-                    password = document.getElementById('password_mgr').value;
-                    confirmPassword = document.getElementById('confirm_password_mgr').value;
-                }
+                const password = document.getElementById('password').value;
+                const confirmPassword = document.getElementById('confirm_password').value;
                 
                 if (password !== confirmPassword) {
                     e.preventDefault();
@@ -569,57 +343,28 @@
                     return false;
                 }
                 
-                if (role === 'manajer') {
-                    const storeId = document.getElementById('store_id').value;
-                    if (!storeId) {
-                        e.preventDefault();
-                        alert('Store wajib dipilih untuk manajer!');
-                        return false;
-                    }
-                }
-                
                 const btn = form.querySelector('button[type="submit"]');
                 btn.disabled = true;
                 btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Sedang memproses...';
             });
             
-            function setupPasswordConfirmation(passwordId, confirmId) {
-                const confirmField = document.getElementById(confirmId);
-                if (confirmField) {
-                    confirmField.addEventListener('input', function() {
-                        const password = document.getElementById(passwordId).value;
-                        const confirmPassword = this.value;
-                        
-                        if (confirmPassword.length > 0) {
-                            if (password === confirmPassword) {
-                                this.style.borderColor = '#28a745';
-                                this.style.backgroundColor = '#d4edda';
-                            } else {
-                                this.style.borderColor = '#dc3545';
-                                this.style.backgroundColor = '#f8d7da';
-                            }
-                        } else {
-                            this.style.borderColor = '#e9ecef';
-                            this.style.backgroundColor = '#f8f9fa';
-                        }
-                    });
+            document.getElementById('confirm_password').addEventListener('input', function() {
+                const password = document.getElementById('password').value;
+                const confirmPassword = this.value;
+                
+                if (confirmPassword.length > 0) {
+                    if (password === confirmPassword) {
+                        this.style.borderColor = '#28a745';
+                        this.style.backgroundColor = '#d4edda';
+                    } else {
+                        this.style.borderColor = '#dc3545';
+                        this.style.backgroundColor = '#f8d7da';
+                    }
+                } else {
+                    this.style.borderColor = '#e9ecef';
+                    this.style.backgroundColor = '#f8f9fa';
                 }
-            }
-            
-            setupPasswordConfirmation('password', 'confirm_password');
-            setupPasswordConfirmation('password_mgr', 'confirm_password_mgr');
-            
-            if (membershipCheckbox && membershipCheckbox.checked) {
-                toggleMembershipSection();
-            }
-            
-            const selectedRole = '<?= $_POST['role'] ?? '' ?>';
-            if (selectedRole) {
-                const roleElement = document.querySelector(`[data-role="${selectedRole}"]`);
-                if (roleElement) {
-                    roleElement.click();
-                }
-            }
+            });
         });
     </script>
 </body>
