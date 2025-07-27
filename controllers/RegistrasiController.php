@@ -34,7 +34,7 @@ class RegistrasiController {
                 
                 if ($result['success']) {
                     $success = $result['message'];
-                    header("refresh:2;url=index.php?controller=auth&action=login");
+                    header("refresh:3;url=index.php?controller=registrasi&action=konfirmasi&email=" . urlencode($data['email']));
                 } else {
                     $error = $result['message'];
                 }
@@ -44,6 +44,56 @@ class RegistrasiController {
         }
         
         include 'views/auth/register.php';
+    }
+    
+    public function konfirmasi() {
+        $email = $_GET['email'] ?? '';
+        $error = '';
+        $success = '';
+        
+        if (empty($email)) {
+            header('Location: index.php?controller=auth&action=login');
+            exit;
+        }
+        
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $kodeKonfirmasi = $_POST['kode_konfirmasi'] ?? '';
+            
+            if (empty($kodeKonfirmasi)) {
+                $error = 'Kode konfirmasi wajib diisi';
+            } else {
+                $result = $this->registrasiModel->verifikasiEmail($email, $kodeKonfirmasi);
+                
+                if ($result['success']) {
+                    $success = $result['message'];
+                    header("refresh:2;url=index.php?controller=auth&action=login");
+                } else {
+                    $error = $result['message'];
+                }
+            }
+        }
+        
+        $data = [
+            'email' => $email,
+            'error' => $error,
+            'success' => $success
+        ];
+        
+        include 'views/auth/konfirmasi.php';
+    }
+    
+    public function resendKode() {
+        $email = $_POST['email'] ?? '';
+        
+        if (empty($email)) {
+            echo json_encode(['success' => false, 'message' => 'Email tidak valid']);
+            return;
+        }
+        
+        $result = $this->registrasiModel->resendKodeKonfirmasi($email);
+        
+        header('Content-Type: application/json');
+        echo json_encode($result);
     }
 }
 ?>
