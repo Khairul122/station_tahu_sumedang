@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Jul 10, 2025 at 11:28 AM
+-- Generation Time: Jul 28, 2025 at 01:21 AM
 -- Server version: 8.0.30
 -- PHP Version: 7.4.1
 
@@ -40,19 +40,8 @@ CREATE TABLE `aktivitas_customer` (
 --
 
 INSERT INTO `aktivitas_customer` (`aktivitas_id`, `customer_id`, `jenis_aktivitas`, `catatan`, `tanggal_aktivitas`) VALUES
-(1, 1, 'pembelian', 'Pembelian rutin setiap minggu', '2025-07-09 15:50:50'),
-(2, 2, 'complaint', 'Mengeluh tahu kurang crispy', '2025-07-09 15:50:50'),
-(3, 3, 'follow_up', 'Follow up customer baru', '2025-07-09 15:50:50'),
-(4, 1, 'promo_info', 'Diberikan info promo membership gold', '2025-07-09 15:50:50'),
-(5, 4, 'pembelian', 'Customer baru tanpa akun login', '2025-07-09 15:50:50'),
-(6, 5, 'follow_up', 'Follow up customer silver member', '2025-07-09 15:50:50'),
-(7, 6, 'pembelian', 'Transaksi #6 - Total: Rp 20,000', '2025-07-10 00:27:18'),
-(8, 6, 'pembelian', 'Transaksi #7 - Total: Rp 20,000', '2025-07-10 00:40:07'),
-(9, 6, 'pembelian', 'Transaksi #8 - Total: Rp 120,000', '2025-07-10 00:47:03'),
-(10, 6, 'follow_up', 'Naik tier menjadi Silver', '2025-07-10 01:02:34'),
-(11, 6, 'pembelian', 'Transaksi #9 - Total: Rp 418,000', '2025-07-10 01:37:06'),
-(12, 6, 'pembelian', 'Transaksi #10 - Total: Rp 104,500', '2025-07-10 01:43:47'),
-(13, 6, 'pembelian', 'Transaksi #11 - Total: Rp 20,900', '2025-07-10 01:44:16');
+(14, 6, 'pembelian', 'Transaksi #14 - Total: Rp 1,900', '2025-07-27 18:07:13'),
+(15, 6, 'pembelian', 'Transaksi #15 - Total: Rp 1,900', '2025-07-27 18:28:36');
 
 -- --------------------------------------------------------
 
@@ -84,7 +73,7 @@ INSERT INTO `customers` (`customer_id`, `user_id`, `nama_customer`, `no_telepon`
 (3, 5, 'Ahmad Fauzi', '081234567892', 'Jl. Merdeka No. 67', 'ahmad@email.com', 1, '50000.00', 25, '2025-07-09', 'aktif'),
 (4, NULL, 'Rina Permata', '081234567893', 'Jl. Sudirman No. 89', 'rina@email.com', 1, '25000.00', 12, '2025-07-09', 'aktif'),
 (5, NULL, 'Dedi Kurniawan', '081234567894', 'Jl. Ahmad Yani No. 56', 'dedi@email.com', 2, '125000.00', 65, '2025-07-09', 'aktif'),
-(6, 6, 'Kartika', '082165443677', 'Lhoksuemawe\r\nBlang Pulo', 'kartika@gmail.com', 2, '285400.00', 112, '2025-07-09', 'aktif');
+(6, 6, 'Kartika', '082165443677', 'Lhoksuemawe\r\nBlang Pulo', 'kartika@gmail.com', 2, '289200.00', 116, '2025-07-09', 'aktif');
 
 --
 -- Triggers `customers`
@@ -151,21 +140,8 @@ CREATE TABLE `detail_transaksi` (
 --
 
 INSERT INTO `detail_transaksi` (`detail_id`, `transaksi_id`, `produk_id`, `jumlah`, `harga_satuan`, `subtotal`, `poin_produk`, `total_poin_item`) VALUES
-(1, 1, 1, 2, '15000.00', '30000.00', 5, 30),
-(2, 1, 3, 1, '20000.00', '20000.00', 8, 24),
-(3, 1, 5, 1, '12000.00', '12000.00', 4, 0),
-(4, 2, 2, 2, '16000.00', '32000.00', 6, 24),
-(5, 2, 5, 1, '12000.00', '12000.00', 4, 8),
-(6, 3, 1, 1, '15000.00', '15000.00', 5, 5),
-(7, 3, 5, 1, '12000.00', '12000.00', 4, 4),
-(8, 4, 1, 1, '15000.00', '15000.00', 5, 5),
-(9, 5, 4, 2, '22000.00', '44000.00', 10, 40),
-(10, 6, 3, 1, '20000.00', '20000.00', 8, 8),
-(11, 7, 3, 1, '20000.00', '20000.00', 8, 8),
-(12, 8, 3, 6, '20000.00', '120000.00', 8, 48),
-(13, 9, 4, 20, '22000.00', '440000.00', 10, 400),
-(14, 10, 4, 5, '22000.00', '110000.00', 10, 100),
-(15, 11, 4, 1, '22000.00', '22000.00', 10, 20);
+(18, 14, 13, 1, '2000.00', '2000.00', 1, 2),
+(19, 15, 11, 1, '2000.00', '2000.00', 1, 2);
 
 -- --------------------------------------------------------
 
@@ -204,19 +180,21 @@ CREATE TABLE `produk` (
   `harga` decimal(10,2) NOT NULL,
   `stok` int DEFAULT '0',
   `kategori` varchar(50) CHARACTER SET utf8mb3 COLLATE utf8mb3_swedish_ci DEFAULT NULL,
-  `poin_reward` int DEFAULT '0'
+  `poin_reward` int DEFAULT '0',
+  `foto_produk` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_swedish_ci DEFAULT NULL,
+  `store_id` int NOT NULL DEFAULT '1'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_swedish_ci;
 
 --
 -- Dumping data for table `produk`
 --
 
-INSERT INTO `produk` (`produk_id`, `nama_produk`, `harga`, `stok`, `kategori`, `poin_reward`) VALUES
-(1, 'Tahu Sumedang Original', '15000.00', 100, 'Original', 5),
-(2, 'Tahu Sumedang Pedas', '16000.00', 80, 'Pedas', 6),
-(3, 'Tahu Sumedang Isi Ayam', '20000.00', 52, 'Isi', 8),
-(4, 'Tahu Sumedang Keju', '22000.00', 14, 'Isi', 10),
-(5, 'Tahu Sumedang Mini', '12000.00', 120, 'Mini', 4);
+INSERT INTO `produk` (`produk_id`, `nama_produk`, `harga`, `stok`, `kategori`, `poin_reward`, `foto_produk`, `store_id`) VALUES
+(11, 'Sala Lauk', '2000.00', 99, 'Original', 1, 'produk_1753595686_6885bf2644899.jpg', 2),
+(12, 'Sala Lauk', '2000.00', 100, 'Original', 1, 'produk_1753595686_6885bf2644899.jpg', 4),
+(13, 'Sala Lauk', '2000.00', 99, 'Original', 1, 'produk_1753595686_6885bf2644899.jpg', 5),
+(14, 'Sala Lauk', '2000.00', 100, 'Original', 1, 'produk_1753595686_6885bf2644899.jpg', 1),
+(15, 'Sala Lauk', '2000.00', 100, 'Original', 1, 'produk_1753595686_6885bf2644899.jpg', 3);
 
 -- --------------------------------------------------------
 
@@ -246,36 +224,54 @@ INSERT INTO `rewards` (`reward_id`, `nama_reward`, `poin_required`, `stock`, `st
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `store`
+--
+
+CREATE TABLE `store` (
+  `id_store` int NOT NULL,
+  `nama_store` varchar(100) CHARACTER SET utf8mb3 COLLATE utf8mb3_swedish_ci NOT NULL,
+  `alamat_store` text CHARACTER SET utf8mb3 COLLATE utf8mb3_swedish_ci NOT NULL,
+  `manajer_store` varchar(100) CHARACTER SET utf8mb3 COLLATE utf8mb3_swedish_ci DEFAULT NULL,
+  `status_store` enum('aktif','tidak_aktif') CHARACTER SET utf8mb3 COLLATE utf8mb3_swedish_ci DEFAULT 'aktif'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_swedish_ci;
+
+--
+-- Dumping data for table `store`
+--
+
+INSERT INTO `store` (`id_store`, `nama_store`, `alamat_store`, `manajer_store`, `status_store`) VALUES
+(1, 'Station Tahu Sumedang - Pasar Usang', 'Pasar usang KM 27, Padang Pariaman', 'Reni', 'aktif'),
+(2, 'Station Tahu Sumedang - Akses Bandara', 'Akses bandara no. 99, Padang Pariaman', 'Raihan', 'aktif'),
+(3, 'Station Tahu Sumedang - Rimbo Datar', 'Rimbo Datar, Padang', 'Hagia', 'aktif'),
+(4, 'Station Tahu Sumedang - Jl Raya Ketaping', 'Jl raya Ketaping', 'Susi', 'aktif'),
+(5, 'Station Tahu Sumedang - Kayu Tanam', 'Kayu Tanam, 2 X 11 Kayu Tanam, Padang Pariaman', 'Kevin', 'aktif');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `transaksi`
 --
 
 CREATE TABLE `transaksi` (
   `transaksi_id` int NOT NULL,
   `customer_id` int DEFAULT NULL,
+  `store_id` int NOT NULL DEFAULT '1',
   `tanggal_transaksi` datetime DEFAULT CURRENT_TIMESTAMP,
   `total_sebelum_diskon` decimal(10,2) NOT NULL,
   `diskon_membership` decimal(10,2) DEFAULT '0.00',
   `total_bayar` decimal(10,2) NOT NULL,
   `poin_didapat` int DEFAULT '0',
-  `metode_pembayaran` enum('tunai','transfer','kartu') CHARACTER SET utf8mb3 COLLATE utf8mb3_swedish_ci DEFAULT 'tunai'
+  `metode_pembayaran` enum('tunai','transfer','kartu') CHARACTER SET utf8mb3 COLLATE utf8mb3_swedish_ci DEFAULT 'tunai',
+  `bukti_pembayaran` varchar(255) COLLATE utf8mb3_swedish_ci DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_swedish_ci;
 
 --
 -- Dumping data for table `transaksi`
 --
 
-INSERT INTO `transaksi` (`transaksi_id`, `customer_id`, `tanggal_transaksi`, `total_sebelum_diskon`, `diskon_membership`, `total_bayar`, `poin_didapat`, `metode_pembayaran`) VALUES
-(1, 1, '2025-07-09 15:50:50', '60000.00', '6000.00', '54000.00', 54, 'tunai'),
-(2, 2, '2025-07-09 15:50:50', '32000.00', '1600.00', '30400.00', 32, 'tunai'),
-(3, 3, '2025-07-09 15:50:50', '27000.00', '0.00', '27000.00', 13, 'tunai'),
-(4, 4, '2025-07-09 15:50:50', '15000.00', '0.00', '15000.00', 5, 'tunai'),
-(5, 5, '2025-07-09 15:50:50', '45000.00', '2250.00', '42750.00', 36, 'tunai'),
-(6, 6, '2025-07-10 00:27:18', '20000.00', '0.00', '20000.00', 10, 'tunai'),
-(7, 6, '2025-07-10 00:40:07', '20000.00', '0.00', '20000.00', 10, 'tunai'),
-(8, 6, '2025-07-10 00:47:03', '120000.00', '0.00', '120000.00', 60, 'tunai'),
-(9, 6, '2025-07-10 01:37:06', '440000.00', '22000.00', '418000.00', 441, 'tunai'),
-(10, 6, '2025-07-10 01:43:47', '110000.00', '5500.00', '104500.00', 110, 'tunai'),
-(11, 6, '2025-07-10 01:44:16', '22000.00', '1100.00', '20900.00', 22, 'tunai');
+INSERT INTO `transaksi` (`transaksi_id`, `customer_id`, `store_id`, `tanggal_transaksi`, `total_sebelum_diskon`, `diskon_membership`, `total_bayar`, `poin_didapat`, `metode_pembayaran`, `bukti_pembayaran`) VALUES
+(14, 6, 5, '2025-07-27 18:07:13', '2000.00', '100.00', '1900.00', 2, 'transfer', 'bukti_1753614433_6886086132ed9.png'),
+(15, 6, 2, '2025-07-27 18:28:36', '2000.00', '100.00', '1900.00', 2, 'tunai', NULL);
 
 -- --------------------------------------------------------
 
@@ -293,13 +289,6 @@ CREATE TABLE `tukar_poin` (
   `tanggal_tukar` datetime DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_swedish_ci;
 
---
--- Dumping data for table `tukar_poin`
---
-
-INSERT INTO `tukar_poin` (`tukar_id`, `customer_id`, `reward_id`, `poin_digunakan`, `reward`, `status`, `tanggal_tukar`) VALUES
-(1, 6, 1, 100, 'Voucher Diskon 10%', 'selesai', '2025-07-10 01:43:56');
-
 -- --------------------------------------------------------
 
 --
@@ -312,23 +301,28 @@ CREATE TABLE `users` (
   `password` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_swedish_ci NOT NULL,
   `nama_lengkap` varchar(100) CHARACTER SET utf8mb3 COLLATE utf8mb3_swedish_ci NOT NULL,
   `email` varchar(100) CHARACTER SET utf8mb3 COLLATE utf8mb3_swedish_ci DEFAULT NULL,
-  `role` enum('admin','member','pimpinan') CHARACTER SET utf8mb3 COLLATE utf8mb3_swedish_ci NOT NULL,
+  `role` enum('admin','member','pimpinan','manajer') CHARACTER SET utf8mb3 COLLATE utf8mb3_swedish_ci NOT NULL,
+  `store_id` int DEFAULT NULL,
   `status` enum('aktif','tidak_aktif') CHARACTER SET utf8mb3 COLLATE utf8mb3_swedish_ci DEFAULT 'aktif',
   `tanggal_dibuat` datetime DEFAULT CURRENT_TIMESTAMP,
-  `terakhir_login` datetime DEFAULT NULL
+  `terakhir_login` datetime DEFAULT NULL,
+  `kode_konfirmasi` varchar(6) COLLATE utf8mb3_swedish_ci DEFAULT NULL,
+  `kode_expired` datetime DEFAULT NULL,
+  `email_verified` tinyint(1) DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_swedish_ci;
 
 --
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`user_id`, `username`, `password`, `nama_lengkap`, `email`, `role`, `status`, `tanggal_dibuat`, `terakhir_login`) VALUES
-(1, 'admin', 'admin123', 'Administrator', 'admin@stationtahu.com', 'admin', 'aktif', '2025-07-09 15:50:50', '2025-07-10 17:39:50'),
-(2, 'pimpinan', 'pimpinan123', 'Pimpinan Station Tahu', 'pimpinan@stationtahu.com', 'pimpinan', 'aktif', '2025-07-09 15:50:50', '2025-07-10 17:40:07'),
-(3, 'budi_member', 'budi123', 'Budi Santoso', 'budi@email.com', 'member', 'aktif', '2025-07-09 15:50:50', NULL),
-(4, 'siti_member', 'siti123', 'Siti Rahayu', 'siti@email.com', 'member', 'aktif', '2025-07-09 15:50:50', NULL),
-(5, 'ahmad_member', 'ahmad123', 'Ahmad Fauzi', 'ahmad@email.com', 'member', 'aktif', '2025-07-09 15:50:50', NULL),
-(6, 'Kartika', 'kartika', 'Kartika', 'kartika@gmail.com', 'member', 'aktif', '2025-07-09 20:38:48', '2025-07-10 00:39:02');
+INSERT INTO `users` (`user_id`, `username`, `password`, `nama_lengkap`, `email`, `role`, `store_id`, `status`, `tanggal_dibuat`, `terakhir_login`, `kode_konfirmasi`, `kode_expired`, `email_verified`) VALUES
+(1, 'admin', 'admin123', 'Administrator', 'admin@stationtahu.com', 'admin', NULL, 'aktif', '2025-07-09 15:50:50', '2025-07-27 19:57:20', NULL, NULL, 0),
+(2, 'pimpinan', 'pimpinan123', 'Pimpinan Station Tahu', 'pimpinan@stationtahu.com', 'pimpinan', NULL, 'aktif', '2025-07-09 15:50:50', '2025-07-27 19:57:32', NULL, NULL, 0),
+(3, 'budi_member', 'budi123', 'Budi Santoso', 'budi@email.com', 'member', NULL, 'aktif', '2025-07-09 15:50:50', NULL, NULL, NULL, 0),
+(4, 'siti_member', 'siti123', 'Siti Rahayu', 'siti@email.com', 'member', NULL, 'aktif', '2025-07-09 15:50:50', NULL, NULL, NULL, 0),
+(5, 'ahmad_member', 'ahmad123', 'Ahmad Fauzi', 'ahmad@email.com', 'member', NULL, 'aktif', '2025-07-09 15:50:50', NULL, NULL, NULL, 0),
+(6, 'Kartika', 'kartika', 'Kartika', 'kartika@gmail.com', 'member', NULL, 'aktif', '2025-07-09 20:38:48', '2025-07-27 18:28:20', NULL, NULL, 0),
+(9, 'kevin', 'kevin123', 'Kevin', 'kevin@gmail.com', 'manajer', 5, 'aktif', '2025-07-27 15:11:02', '2025-07-27 18:29:47', NULL, NULL, 0);
 
 --
 -- Indexes for dumped tables
@@ -367,7 +361,8 @@ ALTER TABLE `membership`
 -- Indexes for table `produk`
 --
 ALTER TABLE `produk`
-  ADD PRIMARY KEY (`produk_id`);
+  ADD PRIMARY KEY (`produk_id`),
+  ADD KEY `produk_ibfk_1` (`store_id`);
 
 --
 -- Indexes for table `rewards`
@@ -376,11 +371,18 @@ ALTER TABLE `rewards`
   ADD PRIMARY KEY (`reward_id`);
 
 --
+-- Indexes for table `store`
+--
+ALTER TABLE `store`
+  ADD PRIMARY KEY (`id_store`);
+
+--
 -- Indexes for table `transaksi`
 --
 ALTER TABLE `transaksi`
   ADD PRIMARY KEY (`transaksi_id`),
-  ADD KEY `customer_id` (`customer_id`);
+  ADD KEY `customer_id` (`customer_id`),
+  ADD KEY `transaksi_ibfk_2` (`store_id`);
 
 --
 -- Indexes for table `tukar_poin`
@@ -395,7 +397,8 @@ ALTER TABLE `tukar_poin`
 --
 ALTER TABLE `users`
   ADD PRIMARY KEY (`user_id`),
-  ADD UNIQUE KEY `username` (`username`);
+  ADD UNIQUE KEY `username` (`username`),
+  ADD KEY `fk_users_store` (`store_id`);
 
 --
 -- AUTO_INCREMENT for dumped tables
@@ -405,19 +408,19 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `aktivitas_customer`
 --
 ALTER TABLE `aktivitas_customer`
-  MODIFY `aktivitas_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `aktivitas_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- AUTO_INCREMENT for table `customers`
 --
 ALTER TABLE `customers`
-  MODIFY `customer_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `customer_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- AUTO_INCREMENT for table `detail_transaksi`
 --
 ALTER TABLE `detail_transaksi`
-  MODIFY `detail_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `detail_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 --
 -- AUTO_INCREMENT for table `membership`
@@ -429,7 +432,7 @@ ALTER TABLE `membership`
 -- AUTO_INCREMENT for table `produk`
 --
 ALTER TABLE `produk`
-  MODIFY `produk_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `produk_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- AUTO_INCREMENT for table `rewards`
@@ -438,10 +441,16 @@ ALTER TABLE `rewards`
   MODIFY `reward_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
+-- AUTO_INCREMENT for table `store`
+--
+ALTER TABLE `store`
+  MODIFY `id_store` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
 -- AUTO_INCREMENT for table `transaksi`
 --
 ALTER TABLE `transaksi`
-  MODIFY `transaksi_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `transaksi_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- AUTO_INCREMENT for table `tukar_poin`
@@ -453,7 +462,7 @@ ALTER TABLE `tukar_poin`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `user_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `user_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
 
 --
 -- Constraints for dumped tables
@@ -480,10 +489,17 @@ ALTER TABLE `detail_transaksi`
   ADD CONSTRAINT `detail_transaksi_ibfk_2` FOREIGN KEY (`produk_id`) REFERENCES `produk` (`produk_id`);
 
 --
+-- Constraints for table `produk`
+--
+ALTER TABLE `produk`
+  ADD CONSTRAINT `produk_ibfk_1` FOREIGN KEY (`store_id`) REFERENCES `store` (`id_store`);
+
+--
 -- Constraints for table `transaksi`
 --
 ALTER TABLE `transaksi`
-  ADD CONSTRAINT `transaksi_ibfk_1` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`customer_id`);
+  ADD CONSTRAINT `transaksi_ibfk_1` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`customer_id`),
+  ADD CONSTRAINT `transaksi_ibfk_2` FOREIGN KEY (`store_id`) REFERENCES `store` (`id_store`);
 
 --
 -- Constraints for table `tukar_poin`
@@ -491,6 +507,12 @@ ALTER TABLE `transaksi`
 ALTER TABLE `tukar_poin`
   ADD CONSTRAINT `tukar_poin_ibfk_1` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`customer_id`),
   ADD CONSTRAINT `tukar_poin_ibfk_2` FOREIGN KEY (`reward_id`) REFERENCES `rewards` (`reward_id`);
+
+--
+-- Constraints for table `users`
+--
+ALTER TABLE `users`
+  ADD CONSTRAINT `fk_users_store` FOREIGN KEY (`store_id`) REFERENCES `store` (`id_store`) ON DELETE SET NULL ON UPDATE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
